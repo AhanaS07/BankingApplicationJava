@@ -1,0 +1,27 @@
+# Compiled output
+*.class
+bin/
+out/
+
+# Logs (your FileLogger files)
+logs/
+
+# VS Code (keep .vscode/settings and extensions, ignore personal stuff)
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# IntelliJ (in case a teammate switches)
+.idea/
+*.iml
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# Mac
+.DS_Store
+
+# Windows
+Thumbs.db
