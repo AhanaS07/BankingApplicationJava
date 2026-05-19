@@ -1,87 +1,91 @@
 package wallet;
 
-import exception.InvalidAmountException;
 import exception.InsufficientBalanceException;
+import exception.InvalidAmountException;
 import exception.WalletLimitExceededException;
-import model.Customer;
 
 public class PhonePeWallet implements WalletOperations {
 
-    private static final double MAX_BALANCE = 50000.0;
-    private static final double DAILY_LIMIT = 20000.0;
+    private static final double MAX_BALANCE          = 50000.0;
+    private static final double DAILY_TRANSFER_LIMIT = 20000.0;
 
-    private final Customer customer;
+    private String walletId;
+    private String ownerName;
     private double balance;
-    private double dailyTransferred;
+    private double dailyTransferredAmount;
 
-    public PhonePeWallet(Customer customer, double initialBalance)
-            throws WalletLimitExceededException, InvalidAmountException {
-        if (initialBalance < 0) {
-            throw new InvalidAmountException("Initial balance cannot be negative");
-        }
-        if (initialBalance > MAX_BALANCE) {
-            throw new WalletLimitExceededException("Initial balance exceeds wallet limit of ₹" + MAX_BALANCE);
-        }
-        this.customer = customer;
-        this.balance = initialBalance;
-        this.dailyTransferred = 0;
+    public PhonePeWallet(String walletId, String ownerName, double initialBalance) {
+        this.walletId               = walletId;
+        this.ownerName              = ownerName;
+        this.balance                = initialBalance;
+        this.dailyTransferredAmount = 0.0;
     }
 
     @Override
-    public void addMoney(double amount) throws WalletLimitExceededException, InvalidAmountException {
+    public void addMoney(double amount)
+            throws InvalidAmountException, WalletLimitExceededException {
         if (amount <= 0) {
-            throw new InvalidAmountException("Amount must be greater than 0");
+            throw new InvalidAmountException(
+                    "InvalidAmountException: Amount to add must be greater than zero.");
         }
         if (balance + amount > MAX_BALANCE) {
             throw new WalletLimitExceededException(
-                "Adding ₹" + amount + " exceeds wallet limit of ₹" + MAX_BALANCE
-            );
+                    "WalletLimitExceededException: Adding ₹" + amount +
+                            " would exceed wallet limit of ₹" + MAX_BALANCE +
+                            ". Current balance: ₹" + balance);
         }
         balance += amount;
-        System.out.println("₹" + amount + " added to PhonePe Wallet | Balance: ₹" + balance);
+        System.out.println("  [PhonePe] ₹" + amount + " added. Wallet balance: ₹" + balance);
     }
 
     @Override
-    public void payBill(String billName, double amount)
-            throws InsufficientBalanceException, InvalidAmountException {
+    public void payBill(String billType, double amount)
+            throws InvalidAmountException, InsufficientBalanceException {
         if (amount <= 0) {
-            throw new InvalidAmountException("Bill amount must be greater than 0");
+            throw new InvalidAmountException(
+                    "InvalidAmountException: Bill payment amount must be greater than zero.");
         }
         if (amount > balance) {
-            throw new InsufficientBalanceException("Insufficient PhonePe balance to pay " + billName);
+            throw new InsufficientBalanceException(
+                    "InsufficientBalanceException: Insufficient PhonePe wallet balance to pay " +
+                            billType + " bill. Available: ₹" + balance + ", Required: ₹" + amount);
         }
         balance -= amount;
-        System.out.println("Bill paid: " + billName + " | ₹" + amount + " | Remaining: ₹" + balance);
+        System.out.println("  [PhonePe] " + billType + " bill of ₹" + amount +
+                " paid. Remaining balance: ₹" + balance);
     }
 
     @Override
-    public void transferToWallet(WalletOperations target, double amount)
-            throws InsufficientBalanceException, WalletLimitExceededException, InvalidAmountException {
+    public void transferToWallet(WalletOperations targetWallet, double amount)
+            throws InvalidAmountException, InsufficientBalanceException,
+            WalletLimitExceededException {
         if (amount <= 0) {
-            throw new InvalidAmountException("Transfer amount must be greater than 0");
+            throw new InvalidAmountException(
+                    "InvalidAmountException: Transfer amount must be positive.");
         }
-        if (dailyTransferred + amount > DAILY_LIMIT) {
+        if (dailyTransferredAmount + amount > DAILY_TRANSFER_LIMIT) {
             throw new WalletLimitExceededException(
-                "Daily transfer limit of ₹" + DAILY_LIMIT + " exceeded"
-            );
+                    "WalletLimitExceededException: Daily transfer limit of ₹" +
+                            DAILY_TRANSFER_LIMIT + " exceeded.");
         }
         if (amount > balance) {
-            throw new InsufficientBalanceException("Insufficient balance for transfer");
+            throw new InsufficientBalanceException(
+                    "InsufficientBalanceException: Insufficient PhonePe wallet balance. " +
+                            "Available: ₹" + balance + ", Requested: ₹" + amount);
         }
         balance -= amount;
-        dailyTransferred += amount;
-        target.addMoney(amount);
-        System.out.println("Transferred ₹" + amount + " | PhonePe Balance: ₹" + balance);
+        dailyTransferredAmount += amount;
+        targetWallet.addMoney(amount);
+        System.out.println("  [PhonePe] Transferred ₹" + amount + " to target wallet.");
     }
 
     @Override
     public double getBalance() { return balance; }
 
     @Override
-    public void displayDetails() {
-        System.out.println("--- PhonePe Wallet ---");
-        System.out.println("Owner  : " + customer.getName());
-        System.out.println("Balance: ₹" + balance);
-        System.out.println("Daily transferred: ₹" + dailyTransferred + " / ₹" + DAILY_LIMIT);
+    public void displayBalance() {
+        System.out.println("  [PhonePe Wallet] ID: " + walletId +
+                " | Owner: " + ownerName +
+                " | Balance: ₹" + balance);
     }
 }

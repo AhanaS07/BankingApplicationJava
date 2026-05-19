@@ -1,16 +1,21 @@
 package wallet;
 
 import exception.InsufficientBalanceException;
+import exception.InvalidAmountException;
 import exception.WalletLimitExceededException;
 
 public interface WalletOperations {
-    void addMoney(double amount) throws WalletLimitExceededException, exception.InvalidAmountException;
 
-    void payBill(String billName, double amount) throws InsufficientBalanceException, exception.InvalidAmountException;
+    void addMoney(double amount)
+            throws InvalidAmountException, WalletLimitExceededException;
 
-    void transferToWallet(WalletOperations target, double amount) throws InsufficientBalanceException, WalletLimitExceededException, exception.InvalidAmountException;
+    void payBill(String billType, double amount)
+            throws InvalidAmountException, InsufficientBalanceException;
+
+    void transferToWallet(WalletOperations targetWallet, double amount)
+            throws InvalidAmountException, InsufficientBalanceException, WalletLimitExceededException;
 
     double getBalance();
-    
-    void displayDetails();
+
+    void displayBalance();
 }

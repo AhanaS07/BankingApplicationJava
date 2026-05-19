@@ -1,7 +1,8 @@
 package model;
 
-import exception.InvalidAmountException;
 import exception.InsufficientBalanceException;
+import exception.InvalidAmountException;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,66 +13,102 @@ public abstract class BankAccount implements Cloneable {
     protected double balance;
     protected List<Transaction> transactionHistory;
 
-    public BankAccount(String accountNumber, Customer customer, double balance) {
-        this.accountNumber = accountNumber;
-        this.customer = customer;
-        this.balance = balance;
+    public BankAccount(String accountNumber, Customer customer, double initialBalance) {
+        this.accountNumber      = accountNumber;
+        this.customer           = customer;
+        this.balance            = initialBalance;
         this.transactionHistory = new ArrayList<>();
     }
 
-    // deposit and withdraw are abstract — subclasses define their own rules
-    public abstract void deposit(double amount) throws InvalidAmountException;
-    public abstract void withdraw(double amount) throws InvalidAmountException, InsufficientBalanceException;
+    public String getAccountNumber() {
+        return accountNumber;
+    }
 
-    // transfer is common to all accounts so defined here
+    public double getBalance() {
+        return balance;
+    }
+
+    public Customer getCustomer() {
+        return customer;
+    }
+
+    public List<Transaction> getTransactionHistory() {
+        return transactionHistory;
+    }
+
+    // deposit
+    public void deposit(double amount) throws InvalidAmountException {
+        if (amount <= 0) {
+            throw new InvalidAmountException(
+                    "InvalidAmountException: Deposit amount cannot be negative or zero. Provided: " + amount);
+        }
+        balance += amount;
+        transactionHistory.add(new Transaction(generateTxnId(), amount, "DEPOSIT"));
+        System.out.println("  Deposited ₹" + amount + " successfully. New balance: ₹" + balance);
+    }
+
+    // withdraw
+    public void withdraw(double amount)
+            throws InvalidAmountException, InsufficientBalanceException {
+        if (amount <= 0) {
+            throw new InvalidAmountException(
+                    "InvalidAmountException: Withdraw amount must be greater than zero.");
+        }
+        if (amount > balance) {
+            throw new InsufficientBalanceException(
+                    "InsufficientBalanceException: Insufficient balance. Available: ₹" +
+                            balance + ", Requested: ₹" + amount);
+        }
+        balance -= amount;
+        transactionHistory.add(new Transaction(generateTxnId(), amount, "WITHDRAW"));
+        System.out.println("  Withdrawn ₹" + amount + " successfully. New balance: ₹" + balance);
+    }
+
+    // transfer
     public void transfer(BankAccount target, double amount)
             throws InvalidAmountException, InsufficientBalanceException {
-
-        if (this.accountNumber.equals(target.accountNumber)) {
-            throw new IllegalArgumentException("Cannot transfer to the same account");
+        // Business rule: sender and receiver cannot be the same account
+        if (this.accountNumber.equals(target.getAccountNumber())) {
+            throw new IllegalArgumentException(
+                    "IllegalArgumentException: Transfer to the same account is not allowed.");
         }
         if (amount <= 0) {
-            throw new InvalidAmountException("Transfer amount must be positive");
+            throw new InvalidAmountException(
+                    "InvalidAmountException: Transfer amount must be positive.");
         }
+        if (amount > balance) {
+            throw new InsufficientBalanceException(
+                    "InsufficientBalanceException: Insufficient balance for transfer. Available: ₹" +
+                            balance + ", Requested: ₹" + amount);
+        }
+        balance -= amount;
+        target.balance += amount;
 
-        this.withdraw(amount);
-        target.deposit(amount);
+        String txnId = generateTxnId();
+        transactionHistory.add(new Transaction(txnId, amount, "TRANSFER-OUT"));
+        target.transactionHistory.add(new Transaction(txnId, amount, "TRANSFER-IN"));
 
-        // log transaction on both sides
-        Transaction debit  = new Transaction(amount, "TRANSFER OUT");
-        Transaction credit = new Transaction(amount, "TRANSFER IN");
-        this.transactionHistory.add(debit);
-        target.transactionHistory.add(credit);
+        System.out.println("  Transferred ₹" + amount +
+                " from Account " + this.accountNumber +
+                " to Account " + target.getAccountNumber());
     }
 
-    public void displayDetails() {
-        System.out.println("Account No  : " + accountNumber);
-        System.out.println("Owner       : " + customer.getName());
-        System.out.println("Email       : " + customer.getEmailID());
-        System.out.println("Phone       : " + customer.getPhoneNo());
-        System.out.println("Balance     : " + balance);
-    }
+    // displayDetails (overridden in subclass)
+    public abstract void displayDetails();
 
-    public void displayTransactions() {
-        if (transactionHistory.isEmpty()) {
-            System.out.println("No transactions found.");
-            return;
-        }
-        for (Transaction t : transactionHistory) {
-            System.out.println(t.getType() + " | Amount: " + t.getAmount() + " | " + t.getTimestamp());
-        }
-    }
-
-    // Getters
-    public String getAccountNumber() { return accountNumber; }
-    public Customer getCustomer()    { return customer; }
-    public double getBalance()       { return balance; }
-
+    // deep clone
     @Override
-    protected Object clone() throws CloneNotSupportedException {
+    public BankAccount clone() throws CloneNotSupportedException {
         BankAccount cloned = (BankAccount) super.clone();
-        // deep clone the transaction list so original isn't affected
+        // Deep-copy the customer so changes to clone don't affect original
+        cloned.customer = this.customer.clone();
+        // Deep-copy transaction list
         cloned.transactionHistory = new ArrayList<>(this.transactionHistory);
         return cloned;
+    }
+
+    // helper
+    private String generateTxnId() {
+        return "TXN" + System.currentTimeMillis();
     }
 }

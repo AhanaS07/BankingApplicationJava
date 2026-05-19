@@ -1,122 +1,65 @@
 package model;
-import java.util.HashSet;
-import java.util.Set;
-import exception.DuplicateCustomerException;
-import exception.InvalidEmailIdException;
-import exception.InvalidPhoneNoException;
 
 public class Customer implements Cloneable {
 
-    private static final Set<Integer> existingCustomerIDs = new HashSet<>();
-
-    private final int customerID;
+    private String customerId;
     private String name;
-    private String phoneNo;
-    private String emailId;
-    private String address;
+    private String email;
+    private String phoneNumber;
 
-    //Constructor
-    public Customer(int customerID, String name, String phoneNo, String emailId, String address) throws DuplicateCustomerException, InvalidPhoneNoException, InvalidEmailIdException {
-
-// Customer ID validation
-        if (customerID <= 0) {
-            throw new IllegalArgumentException("Customer ID must be positive");
-        }
-// Duplicate ID validation
-        if (existingCustomerIDs.contains(customerID)) {
-            throw new DuplicateCustomerException("Customer ID already exists");
-        }
-        existingCustomerIDs.add(customerID);
-
-        this.customerID = customerID;
+    public Customer(String customerId, String name, String email, String phoneNumber) {
+        this.customerId = customerId;
         this.name = name;
-
-// setters for validation
-        setPhoneNo(phoneNo);
-        setEmailID(emailId);
-
-        this.address = address;
-    }
-    // Private constructor for cloning
-    private Customer(int customerID, String name,
-                     String phoneNo, String emailId,
-                     String address, boolean isClone) {
-
-        this.customerID = customerID;
-        this.name = name;
-        this.phoneNo = phoneNo;
-        this.emailId = emailId;
-        this.address = address;
+        this.email = email;
+        this.phoneNumber = phoneNumber;
     }
 
-    //GEtters
-    public int getCustomerID() {
-        return customerID;
+    public String getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(String customerId) {
+        this.customerId = customerId;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getName() {
         return name;
     }
 
-    public String getPhoneNo() {
-        return phoneNo;
-    }
-
-    public String getEmailID() {
-        return emailId;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    //Setters
     public void setName(String name) {
         this.name = name;
     }
 
-    public void setPhoneNo(String phoneNo)
-            throws InvalidPhoneNoException {
-        if (phoneNo == null || phoneNo.length() != 10 || !phoneNo.matches("\\d+")) {
-            throw new InvalidPhoneNoException("Phone number must contain exactly 10 digits");
-        }
-        this.phoneNo = phoneNo;
+    public String getPhoneNumber() {
+        return phoneNumber;
     }
 
-    public void setEmailID(String emailId)
-            throws InvalidEmailIdException {
-        if (emailId == null || !emailId.contains("@")) {
-            throw new InvalidEmailIdException("Email ID must contain '@'");
-        }
-        this.emailId = emailId;
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
+    // Deep cloning
     @Override
-    public Customer clone() {
-
-        return new Customer(
-                this.customerID,
-                new String(this.name),
-                new String(this.phoneNo),
-                new String(this.emailId),
-                new String(this.address),
-                true
-        );
+    public Customer clone() throws CloneNotSupportedException {
+        Customer cloned = (Customer) super.clone();
+        cloned.customerId  = new String(this.customerId);
+        cloned.name        = new String(this.name);
+        cloned.email       = new String(this.email);
+        cloned.phoneNumber = new String(this.phoneNumber);
+        return cloned;
     }
 
     @Override
     public String toString() {
-
-        return "\nCustomer Details" +
-                "\n------------------------" +
-                "\nCustomer ID : " + customerID +
-                "\nName        : " + name +
-                "\nPhone No    : " + phoneNo +
-                "\nEmail ID    : " + emailId +
-                "\nAddress     : " + address;
+        return "Customer [ID=" + customerId + ", Name=" + name +
+                ", Email=" + email + ", Phone=" + phoneNumber + "]";
     }
 }
