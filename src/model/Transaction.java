@@ -3,15 +3,16 @@ import exception.InvalidAmountException;
 import java.time.Instant;
 public class Transaction
 {
+private static int idCounter = 0;
 private int transactionId ;
 private double amount ;
 private String type ;
 private Instant timestamp;
 public Transaction(){
-
+    this.transactionId = ++idCounter;
 }
 public Transaction(double amount, String type) {
-    super();
+    this.transactionId = ++idCounter;
     setAmount(amount);
     setType(type);
     this.timestamp = Instant.now();

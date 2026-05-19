@@ -7,8 +7,12 @@ public class CurrentAccount extends BankAccount {
 
     private static final double OVERDRAFT_LIMIT = 10000.0;  // can go negative up to this
 
-    public CurrentAccount(String accountNumber, Customer customer, double balance) {
+    public CurrentAccount(String accountNumber, Customer customer, double balance)
+            throws InvalidAmountException {
         super(accountNumber, customer, balance);
+        if (balance < 0) {
+            throw new InvalidAmountException("Initial balance cannot be negative");
+        }
     }
 
     @Override

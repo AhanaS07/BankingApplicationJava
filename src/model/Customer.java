@@ -14,8 +14,9 @@ public class Customer implements Cloneable {
     private String phoneNo;
     private String emailId;
     private String address;
+
     //Constructor
-    public Customer(int customerID,String name,String phoneNo,String emailId,String address)throws DuplicateCustomerException,InvalidPhoneNoException,InvalidEmailIdException {
+    public Customer(int customerID, String name, String phoneNo, String emailId, String address) throws DuplicateCustomerException, InvalidPhoneNoException, InvalidEmailIdException {
 
 // Customer ID validation
         if (customerID <= 0) {
@@ -34,6 +35,17 @@ public class Customer implements Cloneable {
         setPhoneNo(phoneNo);
         setEmailID(emailId);
 
+        this.address = address;
+    }
+    // Private constructor for cloning
+    private Customer(int customerID, String name,
+                     String phoneNo, String emailId,
+                     String address, boolean isClone) {
+
+        this.customerID = customerID;
+        this.name = name;
+        this.phoneNo = phoneNo;
+        this.emailId = emailId;
         this.address = address;
     }
 
@@ -82,5 +94,29 @@ public class Customer implements Cloneable {
     public void setAddress(String address) {
         this.address = address;
     }
-    
+
+    @Override
+    public Customer clone() {
+
+        return new Customer(
+                this.customerID,
+                new String(this.name),
+                new String(this.phoneNo),
+                new String(this.emailId),
+                new String(this.address),
+                true
+        );
+    }
+
+    @Override
+    public String toString() {
+
+        return "\nCustomer Details" +
+                "\n------------------------" +
+                "\nCustomer ID : " + customerID +
+                "\nName        : " + name +
+                "\nPhone No    : " + phoneNo +
+                "\nEmail ID    : " + emailId +
+                "\nAddress     : " + address;
+    }
 }
