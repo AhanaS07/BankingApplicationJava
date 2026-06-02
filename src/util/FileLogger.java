@@ -1,53 +1,33 @@
 package util;
 
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+/**
+ * Logging utility for the Banking Application.
+ *
+ * Backed by Log4j2 (configured in resources/log4j2.xml). Every message is
+ * written to BOTH the terminal (Console appender) and the log file
+ * logs/banking-app.log (RollingFile appender).
+ *
+ * The public API (logInfo / logError) is unchanged, so existing callers
+ * such as BankingService keep working without any modification.
+ */
 public class FileLogger {
 
-    private static final String LOG_FILE = "transaction_errors.log";
+    private static final Logger LOGGER = LogManager.getLogger("BankingApp");
 
-    // Logs an error message to the log file.
-    // Demonstrates: IOException (checked), FileNotFoundException (checked)
-    public static void logError(String message) {
-        PrintWriter writer = null;
-        try {
-            // FileWriter(path, true) opens the file in append mode
-            writer = new PrintWriter(new FileWriter(LOG_FILE, true));
-            String timestamp = LocalDateTime.now()
-                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-            writer.println("[ERROR] [" + timestamp + "] " + message);
-            writer.flush();
-        } catch (FileNotFoundException e) {
-            System.err.println("  Log file not found: " + e.getMessage());
-        } catch (IOException e) {
-            System.err.println("  IO error while writing to log: " + e.getMessage());
-        } finally {
-            // finally block always runs — ensures writer is closed
-            if (writer != null) {
-                writer.close();
-            }
-        }
+    private FileLogger() {
+        // utility class — no instances
     }
 
+    // Logs an informational message to terminal + file.
     public static void logInfo(String message) {
-        PrintWriter writer = null;
-        try {
-            writer = new PrintWriter(new FileWriter(LOG_FILE, true));
-            String timestamp = LocalDateTime.now()
-                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-            writer.println("[INFO]  [" + timestamp + "] " + message);
-            writer.flush();
-        } catch (IOException e) {
-            System.err.println("  IO error while writing log: " + e.getMessage());
-        } finally {
-            if (writer != null) {
-                writer.close();
-            }
-        }
+        LOGGER.info(message);
+    }
+
+    // Logs an error message to terminal + file.
+    public static void logError(String message) {
+        LOGGER.error(message);
     }
 }
