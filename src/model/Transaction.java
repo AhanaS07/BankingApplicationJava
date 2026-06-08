@@ -1,58 +1,42 @@
 package model;
+
 import exception.InvalidAmountException;
-import java.time.Instant;
-public class Transaction
-{
-private int transactionId ;
-private double amount ;
-private String type ;
-private Instant timestamp;
-public Transaction(){
 
-}
-public Transaction(double amount, String type) {
-    super();
-    setAmount(amount);
-    setType(type);
-    this.timestamp = Instant.now();
-}
-public int getTransactionId() {
-    return transactionId;
-}
-public void setTransactionId(int transactionId) {
-    this.transactionId = transactionId;
-}
-public double getAmount() {
-    return amount;
-}
-public void setAmount(double amount) {
-    if(amount>0)
-    {
-    this.amount = amount;
+import java.time.LocalDateTime;
+import java.util.Objects;
+
+public class Transaction {
+
+    private final String transactionId;
+    private final double amount;
+    private final TransactionType type;
+    private final LocalDateTime timestamp;
+    private String status;
+
+    public Transaction(String transactionId, double amount, TransactionType type, String status) {
+        if (amount <= 0) {
+            throw new InvalidAmountException("Amount must be greater than zero: " + amount);
+        }
+        this.transactionId = Objects.requireNonNull(transactionId, "transactionId cannot be null");
+        this.type = Objects.requireNonNull(type, "type cannot be null");
+        this.amount = amount;
+        this.status = status == null ? "SUCCESS" : status;
+        this.timestamp = LocalDateTime.now();
     }
-    else
-    {
-        throw new InvalidAmountException("Please enter a valid amount: "+amount);
+
+    public String getTransactionId() { return transactionId; }
+    public double getAmount() { return amount; }
+    public TransactionType getType() { return type; }
+    public LocalDateTime getTimestamp() { return timestamp; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    @Override
+    public String toString() {
+        return "Transaction{id=" + transactionId +
+                ", type=" + type +
+                ", amount=" + amount +
+                ", status=" + status +
+                ", at=" + timestamp + "}";
     }
 }
-public String getType() {
-    return type;
-}
-public void setType(String type) {
-    if (type == null || type.isBlank()) {
-        throw new IllegalArgumentException("Transaction type cannot be null or empty");
-    }
-    this.type = type;
-}
-public Instant getTimestamp() {
-    return timestamp;
-}
-public void setTimestamp(Instant timestamp) {
-    this.timestamp = timestamp;
-}
-
-
-
-
-}
-
