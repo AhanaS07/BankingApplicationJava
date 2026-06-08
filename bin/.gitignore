@@ -1,0 +1,22 @@
+# Compiled class files / build output
+*.class
+target/
+out/
+build/
+
+# Maven
+dependency-reduced-pom.xml
+.mvn/
+
+# Runtime logs (keep the logs/ dir via .gitkeep, ignore generated logs)
+logs/*.log
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# OS
+.DS_Store
