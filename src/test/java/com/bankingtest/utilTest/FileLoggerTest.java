@@ -1,25 +1,38 @@
 package com.bankingtest.utilTest;
 
+import static org.junit.Assert.assertNotNull;
+
 import com.banking.model.Transaction;
 import com.banking.model.TransactionType;
 import com.banking.util.FileLogger;
 
 import java.io.IOException;
 
+import org.junit.Before;
 import org.junit.Test;
 
 public class FileLoggerTest {
 
+    private Transaction transaction;
+
+    @Before
+    public void setUp() {
+        transaction = new Transaction("TXN-1", 100.0, TransactionType.DEPOSIT, "SUCCESS");
+    }
+
     @Test
     public void defaultConstructorCreatesLogger() {
-        FileLogger logger = new FileLogger();
-        org.junit.Assert.assertNotNull(logger);
+        assertNotNull(new FileLogger());
     }
 
     @Test
     public void pathConstructorCreatesLogger() {
-        FileLogger logger = new FileLogger("some/path.log");
-        org.junit.Assert.assertNotNull(logger);
+        assertNotNull(new FileLogger("some/path.log"));
+    }
+
+    @Test
+    public void pathConstructorAcceptsNullPath() {
+        assertNotNull(new FileLogger(null));
     }
 
     @Test
@@ -28,8 +41,17 @@ public class FileLoggerTest {
     }
 
     @Test
+    public void logErrorAcceptsNullMessage() throws IOException {
+        new FileLogger().logError(null);
+    }
+
+    @Test
     public void logTransactionDoesNotThrow() throws IOException {
-        Transaction txn = new Transaction("TXN-1", 100.0, TransactionType.DEPOSIT, "SUCCESS");
-        new FileLogger().logTransaction(txn);
+        new FileLogger().logTransaction(transaction);
+    }
+
+    @Test
+    public void logTransactionAcceptsNullTransaction() throws IOException {
+        new FileLogger().logTransaction(null);
     }
 }
