@@ -1,0 +1,74 @@
+server:
+    port: 8083
+
+spring:
+  application:
+    name: api-gateway
+  profiles:
+    active: dev,prod
+
+#ADD SECURITY CONFIGURATION
+
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+
+      routes:
+        - id: 
+          uri: 
+          predicates:
+            - Path=
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.sleuth: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        #NOTICE: Changed 'routes' to 'gateway'
+        include: health,info,metrics,beans,httptrace,gateway,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+    # REQUIRED for Gateway: This unlocks route viewing and manipulation
+    gateway:
+      access: unrestricted
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0 # Will trace all requests
+    propagation: # In which format data is being sent 
+      type: b3 # Standards thru which info is sent in the header (allows hyphens in code) - Zipkin type is b3 - how is it being sent
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+
+info:
+  app:
+    name: API-GATEWAY
+    version: 1.0.0
+    description: Manages API Gateway
+
+springdoc:
+  swagger-ui:
+    #This enables the dropdown menu in Swagger UI
+    urls:
+      - name: 
+        url: 
