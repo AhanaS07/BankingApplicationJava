@@ -6,12 +6,12 @@ import static org.junit.Assert.assertTrue;
 import com.banking.model.Customer;
 import com.banking.wallet.PhonePeWallet;
 
+import java.math.BigDecimal;
+
 import org.junit.Before;
 import org.junit.Test;
 
 public class PhonePeWalletTest {
-
-    private static final double DELTA = 1e-9;
 
     private Customer customer;
 
@@ -24,7 +24,7 @@ public class PhonePeWalletTest {
     public void constructorSetsIdAndBalance() {
         PhonePeWallet w = new PhonePeWallet("PHPE-1", customer, 1_200.0);
         assertEquals("PHPE-1", w.getWalletId());
-        assertEquals(1_200.0, w.getBalance(), DELTA);
+        assertEquals(0, BigDecimal.valueOf(1_200.0).compareTo(w.getBalance()));
     }
 
     @Test

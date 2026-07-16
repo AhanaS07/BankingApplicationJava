@@ -10,13 +10,13 @@ import com.banking.model.Customer;
 import com.banking.wallet.PaytmWallet;
 import com.banking.wallet.WalletOperations;
 
+import java.math.BigDecimal;
+
 import org.junit.Before;
 import org.junit.Test;
 
 
 public class AbstractWalletTest {
-
-    private static final double DELTA = 1e-9;
 
     private Customer customer;
 
@@ -33,15 +33,15 @@ public class AbstractWalletTest {
     public void constructorStoresOpeningState() {
         PaytmWallet w = wallet(1_000.0);
         assertEquals("W-1", w.getWalletId());
-        assertEquals(1_000.0, w.getBalance(), DELTA);
+        assertEquals(0, BigDecimal.valueOf(1_000.0).compareTo(w.getBalance()));
         assertEquals(customer, w.getLinkedCustomer());
     }
 
     @Test
     public void constructorAcceptsZeroAndMaxOpeningBalance() {
-        assertEquals(0.0, wallet(0.0).getBalance(), DELTA);
-        assertEquals(WalletOperations.MAX_BALANCE,
-                wallet(WalletOperations.MAX_BALANCE).getBalance(), DELTA);
+        assertEquals(0, BigDecimal.ZERO.compareTo(wallet(0.0).getBalance()));
+        assertEquals(0, BigDecimal.valueOf(WalletOperations.MAX_BALANCE)
+                .compareTo(wallet(WalletOperations.MAX_BALANCE).getBalance()));
     }
 
     @Test(expected = InvalidAmountException.class)
@@ -58,7 +58,7 @@ public class AbstractWalletTest {
     public void addMoneyIncreasesBalance() {
         PaytmWallet w = wallet(100.0);
         w.addMoney(250.0);
-        assertEquals(350.0, w.getBalance(), DELTA);
+        assertEquals(0, BigDecimal.valueOf(350.0).compareTo(w.getBalance()));
     }
 
     @Test(expected = InvalidAmountException.class)
@@ -81,7 +81,7 @@ public class AbstractWalletTest {
     public void payBillDebitsBalance() {
         PaytmWallet w = wallet(1_000.0);
         w.payBill(400.0);
-        assertEquals(600.0, w.getBalance(), DELTA);
+        assertEquals(0, BigDecimal.valueOf(600.0).compareTo(w.getBalance()));
     }
 
     @Test(expected = InvalidAmountException.class)
@@ -108,8 +108,8 @@ public class AbstractWalletTest {
         PaytmWallet from = new PaytmWallet("W-from", customer, 1_000.0);
         PaytmWallet to = new PaytmWallet("W-to", customer, 200.0);
         from.transferToWallet(to, 300.0);
-        assertEquals(700.0, from.getBalance(), DELTA);
-        assertEquals(500.0, to.getBalance(), DELTA);
+        assertEquals(0, BigDecimal.valueOf(700.0).compareTo(from.getBalance()));
+        assertEquals(0, BigDecimal.valueOf(500.0).compareTo(to.getBalance()));
     }
 
     @Test(expected = IllegalArgumentException.class)

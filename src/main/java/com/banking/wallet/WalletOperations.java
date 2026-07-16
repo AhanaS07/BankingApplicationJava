@@ -1,5 +1,7 @@
 package com.banking.wallet;
 
+import java.math.BigDecimal;
+
 public interface WalletOperations {
 
     double MAX_BALANCE = 50_000.0;
@@ -13,5 +15,5 @@ public interface WalletOperations {
 
     String getWalletId();
 
-    double getBalance();
+    BigDecimal getBalance();
 }

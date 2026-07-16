@@ -5,13 +5,14 @@ import com.banking.exception.InvalidAmountException;
 import com.banking.exception.WalletLimitExceededException;
 import com.banking.model.Customer;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 abstract class AbstractWallet implements WalletOperations {
 
     private final String walletId;
     private final Customer linkedCustomer;
-    private double balance;
+    private BigDecimal balance;
 
     private LocalDate dailySpendDate;
     private double dailySpendTotal;
@@ -22,7 +23,7 @@ abstract class AbstractWallet implements WalletOperations {
         }
         this.walletId = walletId;
         this.linkedCustomer = linkedCustomer;
-        this.balance = openingBalance;
+        this.balance = BigDecimal.valueOf(openingBalance);
         this.dailySpendDate = LocalDate.now();
         this.dailySpendTotal = 0.0;
     }
@@ -32,11 +33,11 @@ abstract class AbstractWallet implements WalletOperations {
         if (amount <= 0) {
             throw new InvalidAmountException("Top-up amount must be positive: " + amount);
         }
-        if (balance + amount > MAX_BALANCE) {
+        if (balance.add(BigDecimal.valueOf(amount)).compareTo(BigDecimal.valueOf(MAX_BALANCE)) > 0) {
             throw new WalletLimitExceededException(
                     "Wallet " + walletId + " would exceed MAX_BALANCE " + MAX_BALANCE);
         }
-        balance += amount;
+        balance = balance.add(BigDecimal.valueOf(amount));
     }
 
     @Override
@@ -65,11 +66,11 @@ abstract class AbstractWallet implements WalletOperations {
             throw new WalletLimitExceededException(
                     "Wallet " + walletId + " daily spend limit (" + DAILY_LIMIT + ") would be exceeded");
         }
-        if (balance < amount) {
+        if (balance.compareTo(BigDecimal.valueOf(amount)) < 0) {
             throw new InsufficientBalanceException(
                     "Wallet " + walletId + " has insufficient balance (" + balance + ")");
         }
-        balance -= amount;
+        balance = balance.subtract(BigDecimal.valueOf(amount));
         dailySpendTotal += amount;
     }
 
@@ -85,7 +86,7 @@ abstract class AbstractWallet implements WalletOperations {
     public String getWalletId() { return walletId; }
 
     @Override
-    public double getBalance() { return balance; }
+    public BigDecimal getBalance() { return balance; }
 
     public Customer getLinkedCustomer() { return linkedCustomer; }
 }
