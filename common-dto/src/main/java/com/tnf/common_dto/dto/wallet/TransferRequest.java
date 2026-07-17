@@ -11,9 +11,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 // Request body for a wallet-to-wallet transfer.
-// Maps to the monolith's WalletOperations.transferToWallet(target, amount) /
-// BankingService.walletTransfer(fromWalletId, toWalletId, amount) (Main menu option 12).
-// The source walletId comes from the URL path; this body carries the target and amount.
+// Maps to monolith's WalletOperations.transferToWallet(target, amount) / BankingService.walletTransfer(fromWalletId, toWalletId, amount) 
+// (Main menu option 12). source walletId comes from the URL path; this body carries the target and amount.
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
