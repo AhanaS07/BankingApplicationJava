@@ -17,10 +17,11 @@ spring:
           lower-case-service-id: true
 
       routes:
-        - id: 
-          uri: 
+        # Route all auth traffic to the auth-service (load-balanced via Eureka).
+        - id: auth-service
+          uri: lb://auth-service
           predicates:
-            - Path=
+            - Path=/api/auth/**
 
 eureka:
   client:
@@ -70,5 +71,5 @@ springdoc:
   swagger-ui:
     #This enables the dropdown menu in Swagger UI
     urls:
-      - name: 
-        url: 
+      - name: Auth Service
+        url: /api/auth/v3/api-docs
