@@ -7,21 +7,20 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-// Response returned after a successful register/login: the issued token pair plus a user summary.
+// Response describing the authenticated user's profile (GET /api/auth/profile). Never carries the password.
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class JwtResponse {
+public class UserResponse {
 
-    private String accessToken;
-
-    private String refreshToken;
-
-    // Always "Bearer".
-    private String tokenType;
+    private String id;
 
     private String username;
 
+    private String email;
+
     private Set<String> roles;
+
+    private boolean enabled;
 }

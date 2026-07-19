@@ -1,18 +1,16 @@
 package com.tnf.common_dto.dto.auth;
 
-import java.util.Set;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-// Response returned after a successful register/login: the issued token pair plus a user summary.
+// Response returned after exchanging a refresh token for a new access token (POST /api/auth/refresh).
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class JwtResponse {
+public class RefreshTokenResponse {
 
     private String accessToken;
 
@@ -20,8 +18,4 @@ public class JwtResponse {
 
     // Always "Bearer".
     private String tokenType;
-
-    private String username;
-
-    private Set<String> roles;
 }
