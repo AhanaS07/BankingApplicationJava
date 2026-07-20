@@ -21,4 +21,12 @@ public class FallBackController {
         return ResponseEntity.status(503).body(response);
     }
 
+    @GetMapping("/accounts")
+    public ResponseEntity<Map<String, String>> accountServiceFallback() {
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Account service is currently unavailable. Please try again later.");
+        response.put("status", "503 Service Unavailable");
+        return ResponseEntity.status(503).body(response);
+    }
+
 }

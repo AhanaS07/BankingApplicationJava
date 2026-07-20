@@ -32,6 +32,16 @@ spring:
                 name: walletServiceCB
                 fallbackUri: forward:/fallback/wallets
 
+        - id: account-service
+          uri: lb://account-service
+          predicates:
+            - Path=/api/accounts/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: accountServiceCB
+                fallbackUri: forward:/fallback/accounts
+
 eureka:
   client:
     service-url:
@@ -91,3 +101,5 @@ springdoc:
         url: /api/auth/v3/api-docs
       - name: Wallet Service
         url: /api/wallets/v3/api-docs
+      - name: Account Service
+        url: /api/accounts/v3/api-docs
