@@ -1,0 +1,39 @@
+server:
+  port: ${SERVER_PORT:8081}
+
+spring:
+  data:
+    mongodb:
+      # Full connection string supplied by the environment (credentials, replica set, etc.).
+      uri: ${MONGODB_URI}
+
+security:
+  jwt:
+    # No default: the service must fail fast in production if the secret is not provided.
+    secret: ${JWT_SECRET}
+    issuer: ${JWT_ISSUER:auth-service}
+    access-token-expiration-ms: ${JWT_ACCESS_TTL_MS:900000}
+    refresh-token-expiration-ms: ${JWT_REFRESH_TTL_MS:604800000}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI}
+  instance:
+    prefer-ip-address: true
+
+logging:
+  level:
+    com.tnf.auth_service: INFO
+    root: WARN
+
+management:
+  tracing:
+    enabled: true
+    sampling:
+      probability: ${TRACING_SAMPLE_RATE:0.1}
+    propagation:
+      type: b3
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_ENDPOINT}

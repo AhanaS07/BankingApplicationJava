@@ -1,0 +1,35 @@
+server:
+  port: 8081
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/authdb
+
+security:
+  jwt:
+    # Development-only secret; overridden by JWT_SECRET in every real environment.
+    secret: change-me-in-prod-this-is-a-256-bit-development-secret-key-0123456789
+    access-token-expiration-ms: 900000
+    refresh-token-expiration-ms: 604800000
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+logging:
+  level:
+    com.tnf.auth_service: DEBUG
+    org.springframework.security: INFO
+
+management:
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+    propagation:
+      type: b3
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans

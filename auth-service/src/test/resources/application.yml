@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: auth-service
+  profiles:
+    active: test
+  # No mongodb URI: the embedded MongoDB (flapdoodle) auto-configures host/port for tests.
+  data:
+    mongodb:
+      database: authtestdb
+      auto-index-creation: true
+
+# Deterministic signing secret for tests (>= 32 bytes for HS256).
+security:
+  jwt:
+    secret: test-secret-key-that-is-definitely-long-enough-0123456789abcdef
+    issuer: auth-service
+    access-token-expiration-ms: 900000
+    refresh-token-expiration-ms: 604800000
+
+# No service discovery / tracing infrastructure during tests.
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+management:
+  tracing:
+    enabled: false
+
+# Embedded MongoDB (flapdoodle) version to download and run for tests.
+de:
+  flapdoodle:
+    mongodb:
+      embedded:
+        version: 7.0.14
+
