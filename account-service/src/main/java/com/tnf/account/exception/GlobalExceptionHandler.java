@@ -40,6 +40,15 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
+    // A transfer that failed. If the debit was rolled back (reconciled) no money moved -> 409
+    // Conflict (safe to retry). If rollback also failed the state is inconsistent -> 500.
+    @ExceptionHandler(AccountTransferException.class)
+    public ResponseEntity<ErrorResponse> handleTransferFailure(AccountTransferException ex, HttpServletRequest request) {
+        HttpStatus status = ex.isReconciled() ? HttpStatus.CONFLICT : HttpStatus.INTERNAL_SERVER_ERROR;
+        logger.error("Transfer failed (reconciled={}): {}", ex.isReconciled(), ex.getMessage());
+        return build(status, ex.getMessage(), request);
+    }
+
     // Rejects an unknown accountType string (AccountType.valueOf) and other bad arguments.
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {

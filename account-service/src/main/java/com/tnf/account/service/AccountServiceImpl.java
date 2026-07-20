@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.tnf.account.exception.AccountNotFoundException;
+import com.tnf.account.exception.AccountTransferException;
 import com.tnf.account.exception.InsufficientBalanceException;
 import com.tnf.account.exception.InvalidAccountOperationException;
 import com.tnf.account.model.AccountType;
@@ -117,28 +117,55 @@ public class AccountServiceImpl implements AccountService {
     }
 
     /**
-     * Moves funds between two accounts atomically. Requires a MongoTransactionManager (see
-     * {@code config.MongoConfig}) and a replica-set MongoDB for true rollback semantics.
+     * Moves funds between two accounts using application-level compensation (mirrors wallet-service):
+     * debit the source, then credit the target; if the credit fails, roll the debit back. This keeps
+     * transfers working on a standalone MongoDB, which does not permit multi-document transactions.
      */
     @Override
-    @Transactional
     public void transfer(String sourceAccountNumber, AccountTransferRequest request) {
+        log.info("Transferring {} from {} to {}",
+                request.getAmount(), sourceAccountNumber, request.getTargetAccountNumber());
         if (sourceAccountNumber.equals(request.getTargetAccountNumber())) {
             throw new InvalidAccountOperationException("Cannot transfer to the same account");
         }
         BankAccount source = findByAccountNumberOrThrow(sourceAccountNumber);
         BankAccount target = findByAccountNumberOrThrow(request.getTargetAccountNumber());
 
-        applyWithdrawal(source, request.getAmount());
-        target.setBalance(target.getBalance().add(request.getAmount()));
+        // Snapshot the source's pre-debit balance so we can roll back if the credit fails.
+        BigDecimal sourceSnapshot = source.getBalance();
 
+        // Step 1: debit the source and persist. If this throws, nothing has moved -> clean failure.
+        applyWithdrawal(source, request.getAmount());
         accountRepository.save(source);
-        accountRepository.save(target);
+
+        // Step 2: credit the target and persist. If this throws, compensate the debit above.
+        try {
+            target.setBalance(target.getBalance().add(request.getAmount()));
+            accountRepository.save(target);
+        } catch (RuntimeException creditFailure) {
+            log.error("Credit to account {} failed after debiting account {}; rolling back the debit",
+                    request.getTargetAccountNumber(), sourceAccountNumber, creditFailure);
+            try {
+                source.setBalance(sourceSnapshot);
+                accountRepository.save(source);
+            } catch (RuntimeException rollbackFailure) {
+                // Both the credit and its rollback failed: the source is debited with no matching
+                // credit. This cannot be auto-healed and needs manual reconciliation.
+                log.error("CRITICAL: rollback of debit on account {} failed; balances are inconsistent "
+                        + "and require manual reconciliation", sourceAccountNumber, rollbackFailure);
+                throw new AccountTransferException(
+                        "Transfer failed and the debit could not be rolled back for account " + sourceAccountNumber
+                                + ". Manual reconciliation required.",
+                        false, rollbackFailure);
+            }
+            throw new AccountTransferException(
+                    "Transfer failed; the debit on account " + sourceAccountNumber + " was rolled back. No money moved.",
+                    true, creditFailure);
+        }
 
         recordTransaction(source.getId(), target.getId(), request.getAmount(), TransactionType.TRANSFER);
         recordTransaction(target.getId(), source.getId(), request.getAmount(), TransactionType.TRANSFER);
-        log.info("Transferred {} from {} to {}",
-                request.getAmount(), sourceAccountNumber, request.getTargetAccountNumber());
+        log.info("Transfer complete; source account {} balance: {}", sourceAccountNumber, source.getBalance());
     }
 
     @Override
