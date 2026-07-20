@@ -2,6 +2,8 @@ package com.tnf.common_dto.dto.auth;
 
 import java.util.Set;
 
+import com.tnf.common_dto.dto.customer.AddressDto;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -38,4 +40,20 @@ public class RegisterRequest {
 
     // Optional; auth-service defaults to ROLE_USER when absent or empty.
     private Set<String> roles;
+
+    // --- Customer profile fields ---
+    // On registration, auth-service creates the matching Customer in customer-service using these.
+
+    @NotBlank(message = "firstName is required")
+    private String firstName;
+
+    @NotBlank(message = "lastName is required")
+    private String lastName;
+
+    @NotBlank(message = "phone is required")
+    @Pattern(regexp = "^[0-9]{10}$", message = "phone must be exactly 10 digits")
+    private String phone;
+
+    // Optional postal address for the customer profile.
+    private AddressDto address;
 }

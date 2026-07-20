@@ -67,6 +67,13 @@ info:
     version: 1.0.0
     description: Manages API Gateway
 
+# JWT verification at the edge. The secret and issuer MUST match auth-service so the gateway can
+# validate tokens auth-service signed. Supply JWT_SECRET via the environment in real deployments.
+security:
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-prod-this-is-a-256-bit-development-secret-key-0123456789}
+    issuer: auth-service
+
 springdoc:
   swagger-ui:
     #This enables the dropdown menu in Swagger UI

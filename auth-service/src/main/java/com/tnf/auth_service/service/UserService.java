@@ -10,12 +10,20 @@ import com.tnf.common_dto.dto.auth.UserResponse;
 public interface UserService {
 
     /**
-     * Creates a new user from a registration request, hashing the password and assigning roles.
+     * Verifies the username and email are not already taken.
+     *
+     * @throws com.tnf.auth_service.exception.UserAlreadyExistsException if either is taken
+     */
+    void assertAvailable(String username, String email);
+
+    /**
+     * Creates a new user from a registration request, hashing the password, assigning roles and
+     * linking the given customer profile id.
      *
      * @throws com.tnf.auth_service.exception.UserAlreadyExistsException if username/email is taken
      * @throws com.tnf.auth_service.exception.RoleNotFoundException      if a requested role is unknown
      */
-    User register(RegisterRequest request);
+    User register(RegisterRequest request, String customerId);
 
     /** Loads a user by username or throws {@link com.tnf.auth_service.exception.UserNotFoundException}. */
     User getByUsername(String username);

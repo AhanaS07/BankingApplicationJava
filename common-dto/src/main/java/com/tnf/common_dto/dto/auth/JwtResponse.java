@@ -23,5 +23,8 @@ public class JwtResponse {
 
     private String username;
 
+    // Id of the linked customer profile (customer-service), also carried as a JWT claim.
+    private String customerId;
+
     private Set<String> roles;
 }

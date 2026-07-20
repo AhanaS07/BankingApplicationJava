@@ -8,8 +8,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import com.tnf.auth_service.client.CustomerClient;
 import com.tnf.auth_service.entity.RefreshToken;
 import com.tnf.auth_service.entity.User;
+import com.tnf.auth_service.exception.CustomerProvisioningException;
 import com.tnf.auth_service.exception.InvalidCredentialsException;
 import com.tnf.auth_service.exception.UserNotFoundException;
 import com.tnf.auth_service.repository.UserRepository;
@@ -24,6 +26,10 @@ import com.tnf.common_dto.dto.auth.RefreshTokenRequest;
 import com.tnf.common_dto.dto.auth.RefreshTokenResponse;
 import com.tnf.common_dto.dto.auth.RegisterRequest;
 import com.tnf.common_dto.dto.auth.UserResponse;
+import com.tnf.common_dto.dto.common.ApiResponse;
+import com.tnf.common_dto.dto.customer.CustomerDto;
+
+import feign.FeignException;
 
 /**
  * Default {@link AuthService}. Coordinates {@link UserService}, {@link JwtService} and
@@ -40,21 +46,52 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final CustomerClient customerClient;
 
     public AuthServiceImpl(AuthenticationManager authenticationManager, UserService userService,
-            UserRepository userRepository, JwtService jwtService, RefreshTokenService refreshTokenService) {
+            UserRepository userRepository, JwtService jwtService, RefreshTokenService refreshTokenService,
+            CustomerClient customerClient) {
         this.authenticationManager = authenticationManager;
         this.userService = userService;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
+        this.customerClient = customerClient;
     }
 
     @Override
     public JwtResponse register(RegisterRequest request) {
-        User user = userService.register(request);
-        log.info("User '{}' registered; issuing initial token pair", user.getUsername());
+        // Fail fast on duplicates BEFORE provisioning a customer, to avoid an orphaned profile.
+        userService.assertAvailable(request.getUsername(), request.getEmail());
+
+        // Create the linked customer profile in customer-service first, then the auth user.
+        String customerId = provisionCustomer(request);
+        User user = userService.register(request, customerId);
+        log.info("User '{}' registered and linked to customerId {}; issuing token pair",
+                user.getUsername(), customerId);
         return issueTokenPair(user);
+    }
+
+    /** Calls customer-service to create the profile and returns the new customerId. */
+    private String provisionCustomer(RegisterRequest request) {
+        CustomerDto payload = new CustomerDto();
+        payload.setFirstName(request.getFirstName());
+        payload.setLastName(request.getLastName());
+        payload.setEmail(request.getEmail());
+        payload.setPhone(request.getPhone());
+        payload.setAddress(request.getAddress());
+        try {
+            ApiResponse<CustomerDto> response = customerClient.createCustomer(payload);
+            if (response == null || response.getData() == null || response.getData().getId() == null) {
+                throw new CustomerProvisioningException("customer-service returned no customer id", null);
+            }
+            return response.getData().getId();
+        } catch (FeignException ex) {
+            log.error("customer-service rejected profile creation for '{}': {}",
+                    request.getUsername(), ex.getMessage());
+            throw new CustomerProvisioningException(
+                    "Could not create customer profile (customer-service error)", ex);
+        }
     }
 
     @Override
@@ -108,6 +145,7 @@ public class AuthServiceImpl implements AuthService {
                 .refreshToken(refreshToken.getToken())
                 .tokenType(TOKEN_TYPE)
                 .username(user.getUsername())
+                .customerId(user.getCustomerId())
                 .roles(user.getRoles())
                 .build();
     }

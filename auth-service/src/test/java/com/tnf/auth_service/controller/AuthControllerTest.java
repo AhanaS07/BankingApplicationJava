@@ -49,7 +49,8 @@ class AuthControllerTest {
     @Test
     void registerReturns201WithTokens() throws Exception {
         RegisterRequest request = RegisterRequest.builder()
-                .username("alice").email("alice@example.com").password("Str0ng@Pass").build();
+                .username("alice").email("alice@example.com").password("Str0ng@Pass")
+                .firstName("Alice").lastName("Smith").phone("9876543210").build();
         when(authService.register(any(RegisterRequest.class))).thenReturn(JwtResponse.builder()
                 .accessToken("access").refreshToken("refresh").tokenType("Bearer")
                 .username("alice").roles(Set.of("ROLE_USER")).build());

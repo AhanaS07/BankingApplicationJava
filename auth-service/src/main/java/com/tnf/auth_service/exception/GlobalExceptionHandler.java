@@ -1,6 +1,6 @@
 package com.tnf.auth_service.exception;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -56,6 +56,13 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, message, request);
     }
 
+    @ExceptionHandler(CustomerProvisioningException.class)
+    public ResponseEntity<ErrorResponse> handleCustomerProvisioning(CustomerProvisioningException ex,
+            HttpServletRequest request) {
+        log.error("Customer provisioning failed: {}", ex.getMessage());
+        return build(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(AuthException.class)
     public ResponseEntity<ErrorResponse> handleAuth(AuthException ex, HttpServletRequest request) {
         log.warn("Auth error: {}", ex.getMessage());
@@ -70,7 +77,7 @@ public class GlobalExceptionHandler {
 
     private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, HttpServletRequest request) {
         ErrorResponse body = ErrorResponse.builder()
-                .timestamp(Instant.now())
+                .timestamp(LocalDateTime.now())
                 .status(status.value())
                 .error(status.getReasonPhrase())
                 .message(message)

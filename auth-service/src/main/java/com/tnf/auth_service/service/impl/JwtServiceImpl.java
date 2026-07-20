@@ -30,6 +30,7 @@ public class JwtServiceImpl implements JwtService {
     private static final Logger log = LoggerFactory.getLogger(JwtServiceImpl.class);
     private static final String ROLES_CLAIM = "roles";
     private static final String USER_ID_CLAIM = "uid";
+    private static final String CUSTOMER_ID_CLAIM = "cid";
 
     private final JwtProperties properties;
     private final SecretKey signingKey;
@@ -47,6 +48,7 @@ public class JwtServiceImpl implements JwtService {
                 .subject(user.getUsername())
                 .issuer(properties.getIssuer())
                 .claim(USER_ID_CLAIM, user.getId())
+                .claim(CUSTOMER_ID_CLAIM, user.getCustomerId())
                 .claim(ROLES_CLAIM, user.getRoles())
                 .issuedAt(now)
                 .expiration(expiry)

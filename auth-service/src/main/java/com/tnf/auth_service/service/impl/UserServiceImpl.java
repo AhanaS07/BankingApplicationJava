@@ -40,26 +40,33 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User register(RegisterRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new UserAlreadyExistsException("Username already taken: " + request.getUsername());
+    public void assertAvailable(String username, String email) {
+        if (userRepository.existsByUsername(username)) {
+            throw new UserAlreadyExistsException("Username already taken: " + username);
         }
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new UserAlreadyExistsException("Email already registered: " + request.getEmail());
+        if (userRepository.existsByEmail(email)) {
+            throw new UserAlreadyExistsException("Email already registered: " + email);
         }
+    }
+
+    @Override
+    public User register(RegisterRequest request, String customerId) {
+        assertAvailable(request.getUsername(), request.getEmail());
 
         Set<String> roles = resolveRoles(request.getRoles());
 
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
+                .customerId(customerId)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .roles(roles)
                 .enabled(true)
                 .build();
 
         User saved = userRepository.save(user);
-        log.info("Registered new user '{}' with roles {}", saved.getUsername(), saved.getRoles());
+        log.info("Registered new user '{}' (customerId={}) with roles {}",
+                saved.getUsername(), saved.getCustomerId(), saved.getRoles());
         return saved;
     }
 
@@ -75,6 +82,7 @@ public class UserServiceImpl implements UserService {
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
+                .customerId(user.getCustomerId())
                 .roles(user.getRoles())
                 .enabled(user.isEnabled())
                 .build();

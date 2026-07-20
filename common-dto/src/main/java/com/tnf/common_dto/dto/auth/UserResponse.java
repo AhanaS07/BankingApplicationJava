@@ -20,6 +20,9 @@ public class UserResponse {
 
     private String email;
 
+    // Id of the linked customer profile in customer-service.
+    private String customerId;
+
     private Set<String> roles;
 
     private boolean enabled;

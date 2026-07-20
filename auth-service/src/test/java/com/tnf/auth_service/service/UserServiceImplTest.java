@@ -53,9 +53,10 @@ class UserServiceImplTest {
         when(passwordEncoder.encode("Str0ng@Pass")).thenReturn("hashed");
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        User saved = userService.register(request());
+        User saved = userService.register(request(), "cust-1");
 
         assertThat(saved.getPassword()).isEqualTo("hashed");
+        assertThat(saved.getCustomerId()).isEqualTo("cust-1");
         assertThat(saved.getRoles()).containsExactly("ROLE_USER");
         assertThat(saved.isEnabled()).isTrue();
     }
@@ -64,7 +65,7 @@ class UserServiceImplTest {
     void registerRejectsDuplicateUsername() {
         when(userRepository.existsByUsername("alice")).thenReturn(true);
 
-        assertThatThrownBy(() -> userService.register(request()))
+        assertThatThrownBy(() -> userService.register(request(), "cust-1"))
                 .isInstanceOf(UserAlreadyExistsException.class);
     }
 
@@ -73,7 +74,7 @@ class UserServiceImplTest {
         when(userRepository.existsByUsername("alice")).thenReturn(false);
         when(userRepository.existsByEmail("alice@example.com")).thenReturn(true);
 
-        assertThatThrownBy(() -> userService.register(request()))
+        assertThatThrownBy(() -> userService.register(request(), "cust-1"))
                 .isInstanceOf(UserAlreadyExistsException.class);
     }
 
@@ -85,7 +86,7 @@ class UserServiceImplTest {
         when(userRepository.existsByEmail("alice@example.com")).thenReturn(false);
         when(roleRepository.existsByName("ROLE_WIZARD")).thenReturn(false);
 
-        assertThatThrownBy(() -> userService.register(req))
+        assertThatThrownBy(() -> userService.register(req, "cust-1"))
                 .isInstanceOf(RoleNotFoundException.class);
     }
 

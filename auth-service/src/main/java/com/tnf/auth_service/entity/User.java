@@ -40,6 +40,9 @@ public class User {
     @Indexed(unique = true)
     private String email;
 
+    /** Id of the linked customer profile owned by customer-service. */
+    private String customerId;
+
     /** BCrypt hash of the user's password. */
     @Field("password")
     private String password;
