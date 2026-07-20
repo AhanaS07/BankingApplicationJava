@@ -10,8 +10,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-// Request body for creating a wallet.
-// Maps to the monolith's BankingService.createPaytmWallet/createPhonePeWallet(customer, openingBalance)
+// Request for creating a wallet.
+// Maps to monolith's BankingService.createPaytmWallet/createPhonePeWallet(customer, openingBalance)
 // (Main menu option 9 "Create wallet").
 @Data
 @NoArgsConstructor

@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 
 // Standard error body returned by every service's exception handler. Keeps the error shape uniform
 // across services (timestamp, status, error, message, path). Uses LocalDateTime to match the
-// positional constructor used by the other banking services (e.g. customer-service).
+// positional constructor used by the other banking services (e.g. customer-service). @Builder lets
+// auth-service build it fluently; @AllArgsConstructor keeps the positional form others rely on.
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

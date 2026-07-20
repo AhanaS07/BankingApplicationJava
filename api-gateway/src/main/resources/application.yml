@@ -22,6 +22,15 @@ spring:
           uri: lb://auth-service
           predicates:
             - Path=/api/auth/**
+        - id: wallet-service
+          uri: lb://wallet-service
+          predicates:
+            - Path=/api/wallets/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: walletServiceCB
+                fallbackUri: forward:/fallback/wallets
 
 eureka:
   client:
@@ -80,3 +89,5 @@ springdoc:
     urls:
       - name: Auth Service
         url: /api/auth/v3/api-docs
+      - name: Wallet Service
+        url: /api/wallets/v3/api-docs

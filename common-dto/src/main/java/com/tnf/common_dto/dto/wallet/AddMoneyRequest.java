@@ -11,7 +11,8 @@ import lombok.NoArgsConstructor;
 
 // Request body for topping up a wallet.
 // Maps to the monolith's WalletOperations.addMoney(amount) / BankingService.walletAddMoney(walletId, amount)
-// (Main menu option 10). The walletId comes from the URL path, not this body.
+// walletId comes from the URL path, not this body.
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -10,8 +10,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 // Request body for paying a bill from a wallet.
-// Maps to the monolith's WalletOperations.payBill(amount) / BankingService.walletPayBill(walletId, amount)
-// (Main menu option 11). The walletId comes from the URL path, not this body.
+// Maps to monolith's WalletOperations.payBill(amount) / BankingService.walletPayBill(walletId, amount)
+// (Main menu option 11). walletId comes from the URL path, not this body.
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
