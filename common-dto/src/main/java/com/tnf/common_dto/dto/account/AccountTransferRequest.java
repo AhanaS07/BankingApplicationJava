@@ -1,4 +1,4 @@
-package com.tnf.account.dto;
+package com.tnf.common_dto.dto.account;
 
 import java.math.BigDecimal;
 
@@ -14,14 +14,14 @@ import lombok.NoArgsConstructor;
  * Request body for an account-to-account transfer. The source account comes from the URL path;
  * this body carries the target account number and the amount.
  *
- * <p>Distinct from {@code common-dto}'s wallet {@code TransferRequest} — that one is a wallet
- * concern and lives in the shared jar; this is the account-service contract.
+ * <p>Named {@code AccountTransferRequest} to avoid clashing with the wallet
+ * {@code com.tnf.common_dto.dto.wallet.TransferRequest} that also lives in the shared jar.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TransferRequest {
+public class AccountTransferRequest {
 
     @NotBlank(message = "targetAccountNumber is required")
     private String targetAccountNumber;

@@ -1,4 +1,4 @@
-package com.tnf.account.dto;
+package com.tnf.common_dto.dto.account;
 
 import java.math.BigDecimal;
 

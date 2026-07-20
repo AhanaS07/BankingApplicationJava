@@ -7,9 +7,6 @@ spring:
   data:
     mongodb:
       uri: mongodb://localhost:27017/accountdb
-  cloud:
-    config:
-      enabled: false
 
 eureka:
   client:
@@ -17,3 +14,40 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
   instance:
     prefer-ip-address: true
+
+logging:
+  level:
+    com.tnf.account: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,beans,httptrace,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0 # Trace all requests
+    propagation:
+      type: b3 # Zipkin-compatible trace propagation format
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+
+info:
+  app:
+    name: Account Service
+    version: 1.0.0
+    description: Manages Bank Accounts and Transactions
+
+springdoc:
+  api-docs:
+    path: /api/accounts/v3/api-docs
+  swagger-ui:
+    path: /api/accounts/swagger-ui.html

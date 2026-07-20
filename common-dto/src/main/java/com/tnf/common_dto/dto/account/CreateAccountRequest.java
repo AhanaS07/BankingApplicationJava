@@ -1,4 +1,4 @@
-package com.tnf.account.dto;
+package com.tnf.common_dto.dto.account;
 
 import java.math.BigDecimal;
 
@@ -11,9 +11,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Request body for opening an account. Account-service local (not shared): it is an inbound
- * API contract, whereas {@code common-dto}'s {@code BankAccountDto} is the cross-service view.
- * The type-specific fields are optional; sensible defaults are applied when omitted.
+ * Request body for opening an account. Shared via {@code common-dto} alongside the cross-service
+ * {@code BankAccountDto} view. The type-specific fields are optional; sensible defaults are
+ * applied when omitted.
  */
 @Data
 @NoArgsConstructor

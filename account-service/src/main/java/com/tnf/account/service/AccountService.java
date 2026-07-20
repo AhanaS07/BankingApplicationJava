@@ -3,9 +3,9 @@ package com.tnf.account.service;
 import java.math.BigDecimal;
 import java.util.List;
 
-import com.tnf.account.dto.CreateAccountRequest;
-import com.tnf.account.dto.TransferRequest;
+import com.tnf.common_dto.dto.account.AccountTransferRequest;
 import com.tnf.common_dto.dto.account.BankAccountDto;
+import com.tnf.common_dto.dto.account.CreateAccountRequest;
 import com.tnf.common_dto.dto.account.TransactionDto;
 
 /**
@@ -24,7 +24,7 @@ public interface AccountService {
 
     BankAccountDto withdraw(String accountNumber, BigDecimal amount);
 
-    void transfer(String sourceAccountNumber, TransferRequest request);
+    void transfer(String sourceAccountNumber, AccountTransferRequest request);
 
     List<TransactionDto> getTransactionHistory(String accountNumber);
 }

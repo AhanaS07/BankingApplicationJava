@@ -8,8 +8,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.tnf.account.dto.CreateAccountRequest;
-import com.tnf.account.dto.TransferRequest;
 import com.tnf.account.exception.AccountNotFoundException;
 import com.tnf.account.exception.InsufficientBalanceException;
 import com.tnf.account.exception.InvalidAccountOperationException;
@@ -21,7 +19,9 @@ import com.tnf.account.model.Transaction;
 import com.tnf.account.model.TransactionType;
 import com.tnf.account.repository.BankAccountRepository;
 import com.tnf.account.repository.TransactionRepository;
+import com.tnf.common_dto.dto.account.AccountTransferRequest;
 import com.tnf.common_dto.dto.account.BankAccountDto;
+import com.tnf.common_dto.dto.account.CreateAccountRequest;
 import com.tnf.common_dto.dto.account.TransactionDto;
 
 import lombok.RequiredArgsConstructor;
@@ -122,7 +122,7 @@ public class AccountServiceImpl implements AccountService {
      */
     @Override
     @Transactional
-    public void transfer(String sourceAccountNumber, TransferRequest request) {
+    public void transfer(String sourceAccountNumber, AccountTransferRequest request) {
         if (sourceAccountNumber.equals(request.getTargetAccountNumber())) {
             throw new InvalidAccountOperationException("Cannot transfer to the same account");
         }
