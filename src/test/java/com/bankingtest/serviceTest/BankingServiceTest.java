@@ -88,7 +88,6 @@ public class BankingServiceTest {
         service.openAccount(AccountType.SAVINGS, stranger, 100.0);
     }
 
-    // ---- deposit / withdraw / transfer ----
 
     @Test
     public void depositIncreasesBalanceAndRecordsTransaction() {
@@ -139,7 +138,6 @@ public class BankingServiceTest {
         assertEquals(acc.getBalance(), copy.getBalance(), DELTA);
     }
 
-    // ---- wallets ----
 
     @Test
     public void createPaytmWalletRegistersWallet() {
@@ -180,8 +178,6 @@ public class BankingServiceTest {
     public void operationsOnUnknownWalletThrow() {
         service.walletAddMoney("PYTM-missing", 100.0);
     }
-
-    // ---- views / getters ----
 
     @Test
     public void viewTransactionsReturnsRecordedHistory() {
