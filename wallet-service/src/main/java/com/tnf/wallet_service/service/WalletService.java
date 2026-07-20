@@ -6,7 +6,6 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.tnf.wallet_service.entity.Wallet;
@@ -23,12 +22,15 @@ public class WalletService {
 
     private static final Logger logger = LoggerFactory.getLogger(WalletService.class);
 
-    // Business rules 
+    // Business rules
     private static final BigDecimal MAX_BALANCE = new BigDecimal("50000");
     private static final BigDecimal DAILY_LIMIT = new BigDecimal("20000");
 
-    @Autowired
-    private WalletRepo walletRepo;
+    private final WalletRepo walletRepo;
+
+    public WalletService(WalletRepo walletRepo) {
+        this.walletRepo = walletRepo;
+    }
 
     public Wallet createWallet(String customerId, WalletType walletType, BigDecimal openingBalance) {
         logger.info("Creating {} wallet for customer: {}", walletType, customerId);
