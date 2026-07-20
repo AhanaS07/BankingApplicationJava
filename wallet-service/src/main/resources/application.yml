@@ -20,7 +20,7 @@ eureka:
 logging:
   level:
     org.springframework.cloud.sleuth: DEBUG
-    #com.tnf.wallet_service: DEBUG  --> Technically don't need this anymore as this will take all logs below and put in centralised
+    com.tnf.wallet_service: DEBUG  # --> Technically don't need this anymore as this will take all logs below and put in centralised
 
 management:
   endpoints:
@@ -52,6 +52,6 @@ info:
 
 springdoc:
   api-docs:
-    path: /api/wallet/v3/api-docs
+    path: /api/wallets/v3/api-docs
   swagger-ui:
-    path: /api/wallet/swagger-ui.html
+    path: /api/wallets/swagger-ui.html

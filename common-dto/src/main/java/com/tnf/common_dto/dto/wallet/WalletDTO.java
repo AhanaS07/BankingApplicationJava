@@ -11,7 +11,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 // No wallet business rules (MAX_BALANCE, DAILY_LIMIT, daily rollover) live here.
-// walletType is a String (not an enum) on purpose: the enum lives in wallet-service's model package.
+// walletType is a String (not an enum) on purpose: the enum lives in wallet-service
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

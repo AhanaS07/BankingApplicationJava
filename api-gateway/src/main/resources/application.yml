@@ -17,10 +17,15 @@ spring:
           lower-case-service-id: true
 
       routes:
-        - id: 
-          uri: 
+        - id: wallet-service
+          uri: lb://wallet-service
           predicates:
-            - Path=
+            - Path=/api/wallets/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: walletServiceCB
+                fallbackUri: forward:/fallback/wallets
 
 eureka:
   client:
@@ -70,5 +75,5 @@ springdoc:
   swagger-ui:
     #This enables the dropdown menu in Swagger UI
     urls:
-      - name: 
-        url: 
+      - name: Wallet Service
+        url: /api/wallets/v3/api-docs

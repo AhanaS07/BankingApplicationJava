@@ -1,6 +1,20 @@
 package com.tnf.common_dto.dto.common;
 
-// TODO(shared): standard error body returned by every service's exception handler
-// (e.g. timestamp, status, error, message, path). Keeps error shape uniform across services.
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ErrorResponse {
+
+    private LocalDateTime timestamp;
+    private int status;
+    private String error;
+    private String message;
+    private String path;
 }
+
