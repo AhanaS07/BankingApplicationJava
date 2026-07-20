@@ -1,6 +1,7 @@
 package com.tnf.common_dto.dto.customer;
 
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
@@ -24,5 +25,6 @@ public class CustomerDto {
     @NotBlank(message = "Phone Number Cannot be empty")
     private String phone;
 
+    @Valid
     private AddressDto address;
 }
