@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: customer-service
+  profiles:
+    active: dev
   data:
     mongodb:
       uri: mongodb://localhost:27017/customerdb

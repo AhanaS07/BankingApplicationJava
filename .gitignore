@@ -5,11 +5,17 @@ out/
 build/
 
 # Maven
+# Commit the wrapper scripts + maven-wrapper.properties (pins Maven 3.9.16, compatible
+# with JDK 21 / Spring Boot 3.5.16) so `./mvnw` builds reproducibly on a fresh clone.
+# Only the downloaded wrapper jar is generated and should be ignored.
 dependency-reduced-pom.xml
-.mvn/
+.mvn/wrapper/maven-wrapper.jar
 
 # Runtime logs (keep the logs/ dir via .gitkeep, ignore generated logs)
 logs/*.log
+
+# Local run output from starting/testing services (not part of the build)
+runlogs/
 
 # IDE
 .idea/
