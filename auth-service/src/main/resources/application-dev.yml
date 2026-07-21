@@ -9,9 +9,8 @@ spring:
 security:
   jwt:
     # Development-only secret; overridden by JWT_SECRET in every real environment.
+    # Token lifetimes are centralised in config-server (config-files/auth-service.properties).
     secret: change-me-in-prod-this-is-a-256-bit-development-secret-key-0123456789
-    access-token-expiration-ms: 900000
-    refresh-token-expiration-ms: 604800000
 
 eureka:
   client:
