@@ -1,5 +1,11 @@
-# server.port and spring.data.mongodb.uri are centralised in the config-server
-# (config-files/auth-service.properties). JWT stays local (see below).
+server:
+  port: 8081
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/authdb
+
 security:
   jwt:
     # Development-only secret; overridden by JWT_SECRET in every real environment.
@@ -7,7 +13,10 @@ security:
     access-token-expiration-ms: 900000
     refresh-token-expiration-ms: 604800000
 
-# eureka config is centralised in the config-server (config-files/application.properties).
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
 
 logging:
   level:

@@ -1,8 +1,19 @@
-# server.port, spring.data.mongodb.uri and eureka config are centralised in the config-server
-# (config-files/account-service.properties + config-files/application.properties).
+server:
+  port: 8083
+
 spring:
   application:
     name: account-service
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/accountdb
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
 
 logging:
   level:
