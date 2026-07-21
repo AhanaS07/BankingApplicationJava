@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.tnf.common_dto.dto.common.ApiResponse;
 import com.tnf.wallet_service.exception.UnauthorizedWalletAccessException;
+import com.tnf.wallet_service.exception.WalletNotFoundException;
 import com.tnf.common_dto.dto.wallet.AddMoneyRequest;
 import com.tnf.common_dto.dto.wallet.CreateWalletRequest;
 import com.tnf.common_dto.dto.wallet.PayBillRequest;
@@ -71,6 +72,19 @@ public class WalletController {
         }
     }
 
+    // Resolves a wallet by id, but only for its owner. Unlike a customerId, a walletId is not the
+    // caller's own identity, so ownership can only be checked after the lookup. To avoid leaking
+    // which wallet ids exist, a wallet belonging to another customer is reported exactly like a
+    // missing one: the same 404 with the identical message, never a distinguishable 403.
+    private Wallet requireOwnedWallet(String authCustomerId, String walletId) {
+        requireAuthenticated(authCustomerId);
+        Wallet wallet = walletService.getWalletById(walletId); // throws WalletNotFoundException (404) if absent
+        if (!authCustomerId.equals(wallet.getCustomerId())) {
+            throw new WalletNotFoundException("Wallet not found with id: " + walletId);
+        }
+        return wallet;
+    }
+
     @GetMapping
     public ResponseEntity<ApiResponse<List<WalletDTO>>> getAllWallets(
             @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
@@ -88,8 +102,7 @@ public class WalletController {
     public ResponseEntity<ApiResponse<WalletDTO>> getWalletById(@PathVariable String walletId,
             @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
         logger.info("GET /api/wallets/{} - fetch wallet", walletId);
-        Wallet wallet = walletService.getWalletById(walletId);
-        requireOwnership(authCustomerId, wallet.getCustomerId());
+        Wallet wallet = requireOwnedWallet(authCustomerId, walletId);
         return ResponseEntity.ok(ApiResponse.success("Wallet fetched successfully", toDto(wallet)));
     }
 
@@ -109,7 +122,7 @@ public class WalletController {
             @Valid @RequestBody AddMoneyRequest request,
             @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
         logger.info("POST /api/wallets/{}/add-money - amount {}", walletId, request.getAmount());
-        requireOwnership(authCustomerId, walletService.getWalletById(walletId).getCustomerId());
+        requireOwnedWallet(authCustomerId, walletId);
         return ResponseEntity.ok(ApiResponse.success("Money added successfully",
                 toDto(walletService.addMoney(walletId, request.getAmount()))));
     }
@@ -119,7 +132,7 @@ public class WalletController {
             @Valid @RequestBody PayBillRequest request,
             @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
         logger.info("POST /api/wallets/{}/pay-bill - amount {}", walletId, request.getAmount());
-        requireOwnership(authCustomerId, walletService.getWalletById(walletId).getCustomerId());
+        requireOwnedWallet(authCustomerId, walletId);
         return ResponseEntity.ok(ApiResponse.success("Bill paid successfully",
                 toDto(walletService.payBill(walletId, request.getAmount()))));
     }
@@ -130,7 +143,7 @@ public class WalletController {
             @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
         logger.info("POST /api/wallets/{}/transfer - {} to {}", walletId, request.getAmount(), request.getTargetWalletId());
         // Only the SOURCE wallet must be owned by the caller; the target may belong to anyone.
-        requireOwnership(authCustomerId, walletService.getWalletById(walletId).getCustomerId());
+        requireOwnedWallet(authCustomerId, walletId);
         Wallet source = walletService.transfer(walletId, request.getTargetWalletId(), request.getAmount());
         return ResponseEntity.ok(ApiResponse.success("Transfer completed successfully", toDto(source)));
     }

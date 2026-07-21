@@ -13,7 +13,8 @@ import com.tnf.common_dto.dto.customer.CustomerDto;
  *
  * <p>Used at registration time to create the customer profile that a new auth user is linked to.
  */
-@FeignClient(name = "customer-service", path = "/api/customers")
+@FeignClient(name = "customer-service", path = "/api/customers",
+        configuration = CustomerClientConfig.class)
 public interface CustomerClient {
 
     /**

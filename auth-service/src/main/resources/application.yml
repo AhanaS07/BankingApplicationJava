@@ -13,13 +13,18 @@ spring:
       # Create the @Indexed(unique=true) indexes declared on the entities at startup.
       auto-index-creation: true
 
-# JWT signing secret. MUST be at least 32 bytes (256 bits) for HS256, and MUST match the
-# api-gateway verifier — kept local (env var) so signer/verifier never drift.
-# Token lifetimes are centralised in config-server (config-files/auth-service.properties).
+# JWT signing + lifetimes. The secret MUST be at least 32 bytes (256 bits) for HS256.
+# In real environments this is supplied via the JWT_SECRET environment variable.
 security:
   jwt:
     secret: ${JWT_SECRET:change-me-in-prod-this-is-a-256-bit-development-secret-key-0123456789}
     issuer: auth-service
+    access-token-expiration-ms: 900000        # 15 minutes
+    refresh-token-expiration-ms: 604800000     # 7 days
+  # Shared secret sent to customer-service to authorize the internal provisioning call at
+  # registration. Must match customer-service's value; supplied via INTERNAL_API_KEY in real envs.
+  internal:
+    api-key: ${INTERNAL_API_KEY:change-me-in-prod-internal-provisioning-key}
 
 eureka:
   client:

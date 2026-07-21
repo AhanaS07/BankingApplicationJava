@@ -24,6 +24,7 @@ import com.tnf.wallet_service.entity.WalletType;
 import com.tnf.wallet_service.exception.CustomerNotFoundException;
 import com.tnf.wallet_service.exception.CustomerServiceUnavailableException;
 import com.tnf.wallet_service.exception.UnauthorizedWalletAccessException;
+import com.tnf.wallet_service.exception.WalletNotFoundException;
 import com.tnf.wallet_service.repositories.WalletRepo;
 import com.tnf.wallet_service.service.WalletService;
 
@@ -121,11 +122,25 @@ class WalletOwnershipTest {
     }
 
     @Test
-    void getWalletById_forbidsReadingAnotherCustomersWallet() {
+    void getWalletById_hidesAnotherCustomersWallet_asNotFound() {
+        // A wallet owned by someone else must be indistinguishable from a non-existent one
+        // (both 404 with the same message), so the status code can't be used to enumerate ids.
         WalletService service = mock(WalletService.class);
         when(service.getWalletById("W1")).thenReturn(walletOwnedBy("owner"));
         WalletController controller = new WalletController(service);
-        assertThrows(UnauthorizedWalletAccessException.class, () -> controller.getWalletById("W1", "attacker"));
+        WalletNotFoundException ex = assertThrows(WalletNotFoundException.class,
+                () -> controller.getWalletById("W1", "attacker"));
+        assertEquals("Wallet not found with id: W1", ex.getMessage());
+    }
+
+    @Test
+    void getWalletById_forbidsWhenNoIdentityHeader() {
+        // No gateway identity at all is still a 403 (the request didn't come through the gateway),
+        // and this reveals nothing about whether the wallet exists.
+        WalletService service = mock(WalletService.class);
+        WalletController controller = new WalletController(service);
+        assertThrows(UnauthorizedWalletAccessException.class, () -> controller.getWalletById("W1", null));
+        verify(service, never()).getWalletById(any());
     }
 
     @Test

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.tnf.account.exception.AccountNotFoundException;
 import com.tnf.account.exception.UnauthorizedAccountAccessException;
 import com.tnf.account.service.AccountService;
 import com.tnf.common_dto.dto.account.AccountTransferRequest;
@@ -50,22 +51,39 @@ public class AccountController {
     // validates the JWT and injects the authenticated customerId as X-Auth-Customer-Id; we reject
     // any request that targets a different id (or arrives without the header, i.e. not via the gateway).
     private void requireOwnership(String authCustomerId, String requestedCustomerId) {
-        if (authCustomerId == null || authCustomerId.isBlank()) {
-            throw new UnauthorizedAccountAccessException(
-                    "Missing authenticated customer identity; requests must go through the API gateway");
-        }
+        requireAuthenticated(authCustomerId);
         if (!authCustomerId.equals(requestedCustomerId)) {
             throw new UnauthorizedAccountAccessException(
                     "You may only access your own account(s)");
         }
     }
 
+    // Ensures the request carries an authenticated identity (i.e. it came through the gateway).
+    private void requireAuthenticated(String authCustomerId) {
+        if (authCustomerId == null || authCustomerId.isBlank()) {
+            throw new UnauthorizedAccountAccessException(
+                    "Missing authenticated customer identity; requests must go through the API gateway");
+        }
+    }
+
+    // Resolves an account by number, but only for its owner. Unlike a customerId, an accountNumber
+    // is not the caller's own identity, so ownership can only be checked after the lookup. To avoid
+    // leaking which account numbers exist, an account belonging to another customer is reported
+    // exactly like a missing one: the same 404 with the identical message, never a distinguishable 403.
+    private BankAccountDto requireOwnedAccount(String authCustomerId, String accountNumber) {
+        requireAuthenticated(authCustomerId);
+        BankAccountDto account = accountService.getAccount(accountNumber); // throws AccountNotFoundException (404) if absent
+        if (!authCustomerId.equals(account.getCustomerId())) {
+            throw new AccountNotFoundException("Account not found: " + accountNumber);
+        }
+        return account;
+    }
+
     @GetMapping("/{accountNumber}")
     public ResponseEntity<ApiResponse<BankAccountDto>> getAccount(@PathVariable String accountNumber,
             @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
         logger.info("GET /api/accounts/{} - fetch account", accountNumber);
-        BankAccountDto account = accountService.getAccount(accountNumber);
-        requireOwnership(authCustomerId, account.getCustomerId());
+        BankAccountDto account = requireOwnedAccount(authCustomerId, accountNumber);
         return ResponseEntity.ok(ApiResponse.success("Account fetched successfully", account));
     }
 
@@ -83,7 +101,7 @@ public class AccountController {
                                                               @Valid @RequestBody AmountRequest request,
             @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
         logger.info("POST /api/accounts/{}/deposit - amount {}", accountNumber, request.getAmount());
-        requireOwnership(authCustomerId, accountService.getAccount(accountNumber).getCustomerId());
+        requireOwnedAccount(authCustomerId, accountNumber);
         return ResponseEntity.ok(ApiResponse.success("Deposit successful",
                 accountService.deposit(accountNumber, request.getAmount())));
     }
@@ -93,7 +111,7 @@ public class AccountController {
                                                                @Valid @RequestBody AmountRequest request,
             @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
         logger.info("POST /api/accounts/{}/withdraw - amount {}", accountNumber, request.getAmount());
-        requireOwnership(authCustomerId, accountService.getAccount(accountNumber).getCustomerId());
+        requireOwnedAccount(authCustomerId, accountNumber);
         return ResponseEntity.ok(ApiResponse.success("Withdrawal successful",
                 accountService.withdraw(accountNumber, request.getAmount())));
     }
@@ -105,7 +123,7 @@ public class AccountController {
         logger.info("POST /api/accounts/{}/transfer - {} to {}",
                 accountNumber, request.getAmount(), request.getTargetAccountNumber());
         // Only the SOURCE account must be owned by the caller; the target may belong to anyone.
-        requireOwnership(authCustomerId, accountService.getAccount(accountNumber).getCustomerId());
+        requireOwnedAccount(authCustomerId, accountNumber);
         accountService.transfer(accountNumber, request);
         BankAccountDto source = accountService.getAccount(accountNumber);
         return ResponseEntity.ok(ApiResponse.success("Transfer completed successfully", source));
@@ -115,7 +133,7 @@ public class AccountController {
     public ResponseEntity<ApiResponse<List<TransactionDto>>> getTransactions(@PathVariable String accountNumber,
             @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
         logger.info("GET /api/accounts/{}/transactions - fetch transaction history", accountNumber);
-        requireOwnership(authCustomerId, accountService.getAccount(accountNumber).getCustomerId());
+        requireOwnedAccount(authCustomerId, accountNumber);
         List<TransactionDto> transactions = accountService.getTransactionHistory(accountNumber);
         return ResponseEntity.ok(ApiResponse.success("Transactions fetched successfully", transactions));
     }

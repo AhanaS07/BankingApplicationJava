@@ -15,6 +15,11 @@ eureka:
   instance:
     prefer-ip-address: true
 
+# Shared internal provisioning secret (must match auth-service). Dev default only.
+security:
+  internal:
+    api-key: ${INTERNAL_API_KEY:change-me-in-prod-internal-provisioning-key}
+
 logging:
   level:
     com.tnf.customer_service: DEBUG

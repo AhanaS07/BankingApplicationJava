@@ -14,6 +14,9 @@ security:
     issuer: ${JWT_ISSUER:auth-service}
     access-token-expiration-ms: ${JWT_ACCESS_TTL_MS:900000}
     refresh-token-expiration-ms: ${JWT_REFRESH_TTL_MS:604800000}
+  # No default: fail fast in production if the shared internal key is not provided.
+  internal:
+    api-key: ${INTERNAL_API_KEY}
 
 eureka:
   client:

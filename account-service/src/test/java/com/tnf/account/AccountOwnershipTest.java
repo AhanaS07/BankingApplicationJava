@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 
 import com.tnf.account.client.CustomerClient;
 import com.tnf.account.controller.AccountController;
+import com.tnf.account.exception.AccountNotFoundException;
 import com.tnf.account.exception.CustomerNotFoundException;
 import com.tnf.account.exception.CustomerServiceUnavailableException;
 import com.tnf.account.exception.UnauthorizedAccountAccessException;
@@ -135,12 +136,26 @@ class AccountOwnershipTest {
     }
 
     @Test
-    void getAccount_forbidsReadingAnotherCustomersAccount() {
+    void getAccount_hidesAnotherCustomersAccount_asNotFound() {
+        // An account owned by someone else must be indistinguishable from a non-existent one
+        // (both 404 with the same message), so the status code can't be used to enumerate numbers.
         AccountService service = mock(AccountService.class);
         when(service.getAccount("ACC1"))
                 .thenReturn(BankAccountDto.builder().customerId("owner").accountNumber("ACC1").build());
         AccountController controller = new AccountController(service);
 
-        assertThrows(UnauthorizedAccountAccessException.class, () -> controller.getAccount("ACC1", "attacker"));
+        AccountNotFoundException ex = assertThrows(AccountNotFoundException.class,
+                () -> controller.getAccount("ACC1", "attacker"));
+        assertEquals("Account not found: ACC1", ex.getMessage());
+    }
+
+    @Test
+    void getAccount_forbidsWhenNoIdentityHeader() {
+        // No gateway identity at all is still a 403 (the request didn't come through the gateway),
+        // and this reveals nothing about whether the account exists.
+        AccountService service = mock(AccountService.class);
+        AccountController controller = new AccountController(service);
+        assertThrows(UnauthorizedAccountAccessException.class, () -> controller.getAccount("ACC1", null));
+        verify(service, never()).getAccount(any());
     }
 }

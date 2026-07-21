@@ -5,25 +5,38 @@ import com.tnf.common_dto.dto.customer.CustomerDto;
 import com.tnf.customer_service.exception.UnauthorizedCustomerAccessException;
 import com.tnf.customer_service.service.CustomerService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/customers")
-@RequiredArgsConstructor
 public class CustomerController {
 
     private final CustomerService customerService;
+    private final String internalApiKey;
 
-    // Open by design: this is the provisioning entry point called by auth-service (via Feign) during
-    // registration, before the user has a customerId to own. It is not exposed as a public route at
-    // the gateway, so external callers still need a valid token to reach it.
+    public CustomerController(CustomerService customerService,
+            @Value("${security.internal.api-key}") String internalApiKey) {
+        this.customerService = customerService;
+        this.internalApiKey = internalApiKey;
+    }
+
+    // Internal-only: this is the provisioning entry point called by auth-service (via Feign) during
+    // registration, before the user has a customerId to own. It carries no X-Auth-Customer-Id (the
+    // register call is unauthenticated), so it cannot use the ownership check the other endpoints do.
+    // Instead the caller must present the shared internal API key, which only trusted services hold
+    // and which the gateway strips from any inbound request — so no external, JWT-bearing client can
+    // reach it, even though the /api/customers route itself requires a token.
     @PostMapping
-    public ResponseEntity<ApiResponse<CustomerDto>> createCustomer(@Valid @RequestBody CustomerDto customerDto) {
+    public ResponseEntity<ApiResponse<CustomerDto>> createCustomer(@Valid @RequestBody CustomerDto customerDto,
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String internalApiKey) {
+        requireInternalCaller(internalApiKey);
         CustomerDto created = customerService.createCustomer(customerDto);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Customer created successfully", created));
@@ -77,6 +90,17 @@ public class CustomerController {
         if (authCustomerId == null || authCustomerId.isBlank()) {
             throw new UnauthorizedCustomerAccessException(
                     "Missing authenticated customer identity; requests must go through the API gateway");
+        }
+    }
+
+    // Provisioning is restricted to trusted internal services (auth-service) that hold the shared
+    // key. Compared in constant time so a mismatch can't be inferred from response timing.
+    private void requireInternalCaller(String providedKey) {
+        if (providedKey == null || !MessageDigest.isEqual(
+                providedKey.getBytes(StandardCharsets.UTF_8),
+                internalApiKey.getBytes(StandardCharsets.UTF_8))) {
+            throw new UnauthorizedCustomerAccessException(
+                    "Customer provisioning is restricted to internal services");
         }
     }
 }

@@ -15,6 +15,12 @@ eureka:
   instance:
     prefer-ip-address: true
 
+# Shared secret that gates the internal-only customer provisioning endpoint (POST /api/customers).
+# Must match auth-service's value; supplied via INTERNAL_API_KEY in every real environment.
+security:
+  internal:
+    api-key: ${INTERNAL_API_KEY:change-me-in-prod-internal-provisioning-key}
+
 logging:
   level:
     org.springframework.cloud.sleuth: DEBUG

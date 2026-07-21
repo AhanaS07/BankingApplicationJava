@@ -41,6 +41,19 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private static final String BEARER_PREFIX = "Bearer ";
 
+    /**
+     * Identity/trust headers the gateway alone is allowed to set. Any copy supplied by an inbound
+     * client is stripped before routing so it can never be spoofed or smuggled to a downstream
+     * service ({@code X-Internal-Api-Key} gates customer provisioning; {@code X-Auth-*} carry the
+     * authenticated identity that services trust).
+     */
+    private static final List<String> TRUSTED_HEADERS = List.of(
+            "X-Internal-Api-Key",
+            "X-Auth-Username",
+            "X-Auth-User-Id",
+            "X-Auth-Customer-Id",
+            "X-Auth-Roles");
+
     /** Endpoints reachable without a token. */
     private static final List<String> PUBLIC_PATTERNS = List.of(
             "/api/auth/register",
@@ -70,7 +83,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
         if (isPublic(path)) {
-            return chain.filter(exchange);
+            // Even unauthenticated requests must not carry client-supplied trust headers downstream.
+            ServerHttpRequest cleaned = exchange.getRequest().mutate()
+                    .headers(this::stripTrustedHeaders)
+                    .build();
+            return chain.filter(exchange.mutate().request(cleaned).build());
         }
 
         String header = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
@@ -88,6 +105,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                     .getPayload();
 
             ServerHttpRequest mutated = exchange.getRequest().mutate()
+                    // Drop any inbound copies first so the values below are the only ones downstream sees.
+                    .headers(this::stripTrustedHeaders)
                     .header("X-Auth-Username", nullSafe(claims.getSubject()))
                     .header("X-Auth-User-Id", nullSafe(claims.get("uid")))
                     .header("X-Auth-Customer-Id", nullSafe(claims.get("cid")))
@@ -98,6 +117,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             log.warn("Rejected request to {}: {}", path, ex.getMessage());
             return unauthorized(exchange, "Invalid or expired token");
         }
+    }
+
+    private void stripTrustedHeaders(HttpHeaders headers) {
+        TRUSTED_HEADERS.forEach(headers::remove);
     }
 
     private boolean isPublic(String path) {
