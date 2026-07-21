@@ -92,6 +92,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         String header = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (header == null || !header.startsWith(BEARER_PREFIX)) {
+            // Logged at WARN to match the invalid/expired-token rejection below, so every 401 the
+            // gateway emits is recorded. The path only — never the Authorization header value.
+            log.warn("Rejected request to {}: missing or malformed Authorization header", path);
             return unauthorized(exchange, "Missing or malformed Authorization header");
         }
 

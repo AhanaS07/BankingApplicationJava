@@ -53,6 +53,8 @@ public class AccountController {
     private void requireOwnership(String authCustomerId, String requestedCustomerId) {
         requireAuthenticated(authCustomerId);
         if (!authCustomerId.equals(requestedCustomerId)) {
+            logger.warn("Ownership denied: authenticated customer {} attempted to access customer {}",
+                    authCustomerId, requestedCustomerId);
             throw new UnauthorizedAccountAccessException(
                     "You may only access your own account(s)");
         }
@@ -61,6 +63,7 @@ public class AccountController {
     // Ensures the request carries an authenticated identity (i.e. it came through the gateway).
     private void requireAuthenticated(String authCustomerId) {
         if (authCustomerId == null || authCustomerId.isBlank()) {
+            logger.warn("Rejected request lacking authenticated customer identity (no X-Auth-Customer-Id)");
             throw new UnauthorizedAccountAccessException(
                     "Missing authenticated customer identity; requests must go through the API gateway");
         }
@@ -74,6 +77,8 @@ public class AccountController {
         requireAuthenticated(authCustomerId);
         BankAccountDto account = accountService.getAccount(accountNumber); // throws AccountNotFoundException (404) if absent
         if (!authCustomerId.equals(account.getCustomerId())) {
+            logger.warn("Ownership denied: customer {} attempted to access account {} owned by another customer; "
+                    + "reporting as not found", authCustomerId, accountNumber);
             throw new AccountNotFoundException("Account not found: " + accountNumber);
         }
         return account;

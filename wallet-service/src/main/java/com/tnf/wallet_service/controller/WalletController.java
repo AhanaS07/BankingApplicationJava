@@ -59,6 +59,8 @@ public class WalletController {
     private void requireOwnership(String authCustomerId, String requestedCustomerId) {
         requireAuthenticated(authCustomerId);
         if (!authCustomerId.equals(requestedCustomerId)) {
+            logger.warn("Ownership denied: authenticated customer {} attempted to access customer {}",
+                    authCustomerId, requestedCustomerId);
             throw new UnauthorizedWalletAccessException(
                     "You may only access your own wallet(s)");
         }
@@ -67,6 +69,7 @@ public class WalletController {
     // Ensures the request carries an authenticated identity (i.e. it came through the gateway).
     private void requireAuthenticated(String authCustomerId) {
         if (authCustomerId == null || authCustomerId.isBlank()) {
+            logger.warn("Rejected request lacking authenticated customer identity (no X-Auth-Customer-Id)");
             throw new UnauthorizedWalletAccessException(
                     "Missing authenticated customer identity; requests must go through the API gateway");
         }
@@ -80,6 +83,8 @@ public class WalletController {
         requireAuthenticated(authCustomerId);
         Wallet wallet = walletService.getWalletById(walletId); // throws WalletNotFoundException (404) if absent
         if (!authCustomerId.equals(wallet.getCustomerId())) {
+            logger.warn("Ownership denied: customer {} attempted to access wallet {} owned by another customer; "
+                    + "reporting as not found", authCustomerId, walletId);
             throw new WalletNotFoundException("Wallet not found with id: " + walletId);
         }
         return wallet;

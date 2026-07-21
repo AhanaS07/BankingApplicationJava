@@ -5,6 +5,8 @@ import com.tnf.common_dto.dto.customer.CustomerDto;
 import com.tnf.customer_service.exception.UnauthorizedCustomerAccessException;
 import com.tnf.customer_service.service.CustomerService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/customers")
 public class CustomerController {
+
+    private static final Logger logger = LoggerFactory.getLogger(CustomerController.class);
 
     private final CustomerService customerService;
     private final String internalApiKey;
@@ -36,8 +40,10 @@ public class CustomerController {
     @PostMapping
     public ResponseEntity<ApiResponse<CustomerDto>> createCustomer(@Valid @RequestBody CustomerDto customerDto,
             @RequestHeader(value = "X-Internal-Api-Key", required = false) String internalApiKey) {
+        logger.info("POST /api/customers - internal provisioning request");
         requireInternalCaller(internalApiKey);
         CustomerDto created = customerService.createCustomer(customerDto);
+        logger.info("Customer provisioned with id {}", created.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Customer created successfully", created));
     }
@@ -45,6 +51,7 @@ public class CustomerController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<CustomerDto>> getCustomer(@PathVariable String id,
             @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
+        logger.info("GET /api/customers/{} - fetch customer", id);
         requireOwnership(authCustomerId, id);
         return ResponseEntity.ok(ApiResponse.success("Customer fetched successfully", customerService.getCustomerById(id)));
     }
@@ -52,6 +59,7 @@ public class CustomerController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<CustomerDto>>> getAllCustomers(
             @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
+        logger.info("GET /api/customers - fetch caller's own profile");
         // Scoped to the caller: returns only the authenticated customer's own profile,
         // never every customer in the system.
         requireAuthenticated(authCustomerId);
@@ -63,6 +71,7 @@ public class CustomerController {
     public ResponseEntity<ApiResponse<CustomerDto>> updateCustomer(@PathVariable String id,
             @Valid @RequestBody CustomerDto customerDto,
             @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
+        logger.info("PUT /api/customers/{} - update customer", id);
         requireOwnership(authCustomerId, id);
         return ResponseEntity.ok(ApiResponse.success("Customer updated successfully", customerService.updateCustomer(id, customerDto)));
     }
@@ -70,6 +79,7 @@ public class CustomerController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteCustomer(@PathVariable String id,
             @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
+        logger.info("DELETE /api/customers/{} - delete customer", id);
         requireOwnership(authCustomerId, id);
         customerService.deleteCustomer(id);
         return ResponseEntity.ok(ApiResponse.success("Customer deleted successfully", null));
@@ -82,12 +92,15 @@ public class CustomerController {
     private void requireOwnership(String authCustomerId, String requestedCustomerId) {
         requireAuthenticated(authCustomerId);
         if (!authCustomerId.equals(requestedCustomerId)) {
+            logger.warn("Ownership denied: authenticated customer {} attempted to access customer {}",
+                    authCustomerId, requestedCustomerId);
             throw new UnauthorizedCustomerAccessException("You may only access your own customer profile");
         }
     }
 
     private void requireAuthenticated(String authCustomerId) {
         if (authCustomerId == null || authCustomerId.isBlank()) {
+            logger.warn("Rejected request lacking authenticated customer identity (no X-Auth-Customer-Id)");
             throw new UnauthorizedCustomerAccessException(
                     "Missing authenticated customer identity; requests must go through the API gateway");
         }
@@ -99,6 +112,7 @@ public class CustomerController {
         if (providedKey == null || !MessageDigest.isEqual(
                 providedKey.getBytes(StandardCharsets.UTF_8),
                 internalApiKey.getBytes(StandardCharsets.UTF_8))) {
+            logger.warn("Rejected customer provisioning attempt with missing/invalid internal API key");
             throw new UnauthorizedCustomerAccessException(
                     "Customer provisioning is restricted to internal services");
         }

@@ -3,6 +3,8 @@ package com.tnf.auth_service.security;
 import java.io.IOException;
 import java.time.LocalDateTime;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
@@ -22,6 +24,8 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
+    private static final Logger logger = LoggerFactory.getLogger(RestAuthenticationEntryPoint.class);
+
     private final ObjectMapper objectMapper;
 
     public RestAuthenticationEntryPoint(ObjectMapper objectMapper) {
@@ -31,6 +35,8 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
             AuthenticationException authException) throws IOException {
+        logger.warn("Unauthenticated access to {} rejected (401): {}",
+                request.getRequestURI(), authException.getMessage());
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 

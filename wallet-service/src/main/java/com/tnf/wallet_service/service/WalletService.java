@@ -70,11 +70,15 @@ public class WalletService {
         try {
             ApiResponse<CustomerDto> response = customerClient.getCustomer(customerId);
             if (response == null || response.getData() == null || response.getData().getId() == null) {
+                logger.warn("customer-service returned an empty body verifying customer {}", customerId);
                 throw new CustomerNotFoundException("Customer " + customerId + " does not exist");
             }
         } catch (FeignException.NotFound ex) {
-            throw new CustomerNotFoundException("Customer " + customerId + " does not exist");
+            logger.warn("customer-service reports customer {} does not exist: {}", customerId, ex.getMessage());
+            throw new CustomerNotFoundException("Customer " + customerId + " does not exist", ex);
         } catch (FeignException ex) {
+            logger.error("customer-service call failed while verifying customer {}: {}",
+                    customerId, ex.getMessage(), ex);
             throw new CustomerServiceUnavailableException(
                     "customer-service is unavailable; cannot verify customer " + customerId, ex);
         }

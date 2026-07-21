@@ -44,7 +44,7 @@ public class GlobalExceptionHandler {
     // customer-service could not be reached to verify the customer -> fail closed with 503.
     @ExceptionHandler(CustomerServiceUnavailableException.class)
     public ResponseEntity<ErrorResponse> handleCustomerServiceDown(CustomerServiceUnavailableException ex, HttpServletRequest request) {
-        logger.error("customer-service unavailable: {}", ex.getMessage());
+        logger.error("customer-service unavailable: {}", ex.getMessage(), ex);
         return build(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
     }
 
@@ -66,7 +66,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccountTransferException.class)
     public ResponseEntity<ErrorResponse> handleTransferFailure(AccountTransferException ex, HttpServletRequest request) {
         HttpStatus status = ex.isReconciled() ? HttpStatus.CONFLICT : HttpStatus.INTERNAL_SERVER_ERROR;
-        logger.error("Transfer failed (reconciled={}): {}", ex.isReconciled(), ex.getMessage());
+        logger.error("Transfer failed (reconciled={}): {}", ex.isReconciled(), ex.getMessage(), ex);
         return build(status, ex.getMessage(), request);
     }
 
@@ -85,6 +85,15 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining(", "));
         logger.warn("Validation failed: {}", message);
         return build(HttpStatus.BAD_REQUEST, message, request);
+    }
+
+    // Catch-all for anything unmapped (e.g. Mongo/data-access failures, NPEs). Logged at ERROR with
+    // the full stack trace so unexpected 500s are never silent, and returned as a generic 500 so
+    // internal details are not leaked to the client.
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex, HttpServletRequest request) {
+        logger.error("Unexpected error handling {}", request.getRequestURI(), ex);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", request);
     }
 
     private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, HttpServletRequest request) {
