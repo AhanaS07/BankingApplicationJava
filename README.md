@@ -64,13 +64,7 @@ BankingApplicationJava/
 │   ├── account-service.yml
 │   └── ...
 │
-├── common/ (optional)                  ← shared DTOs, exceptions, error model (a plain jar module)
-│
-├── docker-compose.yml                  ← Prometheus, Grafana, ELK, Zipkin/Tempo 
-└── observability/
-    ├── prometheus.yml
-    ├── logstash.conf
-    └── grafana/…
+└──common/ (optional)                  ← shared DTOs, exceptions, error model (a plain jar module)
 ```
 
 ## Service module layout
