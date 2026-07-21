@@ -1,6 +1,4 @@
-server:
-  port: 8081
-
+# server.port is centralised in the config-server (config-files/auth-service.properties: 8081).
 spring:
   application:
     name: auth-service
@@ -22,12 +20,7 @@ security:
     access-token-expiration-ms: 900000        # 15 minutes
     refresh-token-expiration-ms: 604800000     # 7 days
 
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
-  instance:
-    prefer-ip-address: true
+# eureka client/instance config is centralised in the config-server (config-files/application.properties).
 
 management:
   endpoints:

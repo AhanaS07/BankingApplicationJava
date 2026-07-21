@@ -1,6 +1,4 @@
-server:
-    port: 8080
-
+# server.port is centralised in the config-server (config-files/api-gateway.properties: 8080).
 spring:
   application:
     name: api-gateway
@@ -52,12 +50,7 @@ spring:
                 name: customerServiceCB
                 fallbackUri: forward:/fallback/customers
 
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-  instance:
-    prefer-ip-address: true
+# eureka client/instance config is centralised in the config-server (config-files/application.properties).
 
 logging:
   level:

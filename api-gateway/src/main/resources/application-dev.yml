@@ -1,14 +1,8 @@
-server:
-  port: 8080
-
+# server.port and eureka config are centralised in the config-server
+# (config-files/api-gateway.properties + config-files/application.properties).
 spring:
   application:
     name: api-gateway
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
 
 logging:
   level:
