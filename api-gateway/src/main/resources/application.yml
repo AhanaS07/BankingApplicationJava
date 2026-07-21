@@ -114,4 +114,4 @@ springdoc:
       - name: Account Service
         url: /api/accounts/v3/api-docs
       - name: Customer Service
-        url: /api/customer/v3/api-docs
+        url: /api/customers/v3/api-docs

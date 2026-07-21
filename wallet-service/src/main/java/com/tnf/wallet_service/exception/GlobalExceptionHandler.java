@@ -27,6 +27,27 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
+    // The referenced owning customer does not exist in customer-service.
+    @ExceptionHandler(CustomerNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleCustomerNotFound(CustomerNotFoundException ex, HttpServletRequest request) {
+        logger.warn("Referenced customer not found: {}", ex.getMessage());
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    // Caller tried to act on a customerId that is not their own -> 403 Forbidden.
+    @ExceptionHandler(UnauthorizedWalletAccessException.class)
+    public ResponseEntity<ErrorResponse> handleForbidden(UnauthorizedWalletAccessException ex, HttpServletRequest request) {
+        logger.warn("Forbidden wallet access: {}", ex.getMessage());
+        return build(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    // customer-service could not be reached to verify the customer -> fail closed with 503.
+    @ExceptionHandler(CustomerServiceUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleCustomerServiceDown(CustomerServiceUnavailableException ex, HttpServletRequest request) {
+        logger.error("customer-service unavailable: {}", ex.getMessage());
+        return build(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
+    }
+
     @ExceptionHandler({ InvalidAmountException.class, InsufficientBalanceException.class,
             WalletLimitExceededException.class })
     // 422 Unprocessable Entity: request was well-formed but a wallet business rule rejected it.

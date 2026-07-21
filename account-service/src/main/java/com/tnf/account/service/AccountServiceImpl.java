@@ -7,8 +7,11 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.stereotype.Service;
 
+import com.tnf.account.client.CustomerClient;
 import com.tnf.account.exception.AccountNotFoundException;
 import com.tnf.account.exception.AccountTransferException;
+import com.tnf.account.exception.CustomerNotFoundException;
+import com.tnf.account.exception.CustomerServiceUnavailableException;
 import com.tnf.account.exception.InsufficientBalanceException;
 import com.tnf.account.exception.InvalidAccountOperationException;
 import com.tnf.account.model.AccountType;
@@ -23,7 +26,10 @@ import com.tnf.common_dto.dto.account.AccountTransferRequest;
 import com.tnf.common_dto.dto.account.BankAccountDto;
 import com.tnf.common_dto.dto.account.CreateAccountRequest;
 import com.tnf.common_dto.dto.account.TransactionDto;
+import com.tnf.common_dto.dto.common.ApiResponse;
+import com.tnf.common_dto.dto.customer.CustomerDto;
 
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,9 +44,11 @@ public class AccountServiceImpl implements AccountService {
 
     private final BankAccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final CustomerClient customerClient;
 
     @Override
     public BankAccountDto createAccount(CreateAccountRequest request) {
+        validateCustomerExists(request.getCustomerId());
         AccountType type = AccountType.valueOf(request.getAccountType());
         BigDecimal initial = request.getInitialDeposit() == null ? BigDecimal.ZERO : request.getInitialDeposit();
 
@@ -55,6 +63,22 @@ public class AccountServiceImpl implements AccountService {
         }
         log.info("Created {} account {} for customer {}", type, saved.getAccountNumber(), saved.getCustomerId());
         return toDto(saved);
+    }
+
+    // Verifies the owning customer exists in customer-service before an account is created.
+    // Fails closed: a 404 -> CustomerNotFoundException; any other transport error -> unavailable.
+    private void validateCustomerExists(String customerId) {
+        try {
+            ApiResponse<CustomerDto> response = customerClient.getCustomer(customerId);
+            if (response == null || response.getData() == null || response.getData().getId() == null) {
+                throw new CustomerNotFoundException("Customer " + customerId + " does not exist");
+            }
+        } catch (FeignException.NotFound ex) {
+            throw new CustomerNotFoundException("Customer " + customerId + " does not exist");
+        } catch (FeignException ex) {
+            throw new CustomerServiceUnavailableException(
+                    "customer-service is unavailable; cannot verify customer " + customerId, ex);
+        }
     }
 
     private SavingsAccount buildSavings(CreateAccountRequest request, BigDecimal initial) {

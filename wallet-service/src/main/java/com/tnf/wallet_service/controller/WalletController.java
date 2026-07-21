@@ -10,10 +10,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tnf.common_dto.dto.common.ApiResponse;
+import com.tnf.wallet_service.exception.UnauthorizedWalletAccessException;
 import com.tnf.common_dto.dto.wallet.AddMoneyRequest;
 import com.tnf.common_dto.dto.wallet.CreateWalletRequest;
 import com.tnf.common_dto.dto.wallet.PayBillRequest;
@@ -38,8 +40,10 @@ public class WalletController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<WalletDTO>> createWallet(@Valid @RequestBody CreateWalletRequest request) {
+    public ResponseEntity<ApiResponse<WalletDTO>> createWallet(@Valid @RequestBody CreateWalletRequest request,
+            @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
         logger.info("POST /api/wallets - create {} wallet for customer {}", request.getWalletType(), request.getCustomerId());
+        requireOwnership(authCustomerId, request.getCustomerId());
         Wallet wallet = walletService.createWallet(
                 request.getCustomerId(),
                 WalletType.valueOf(request.getWalletType()),
@@ -48,25 +52,52 @@ public class WalletController {
                 .body(ApiResponse.success("Wallet created successfully", toDto(wallet)));
     }
 
+    // A caller may only open a wallet for their OWN customer profile. The gateway validates the
+    // JWT and injects the authenticated customerId as X-Auth-Customer-Id; we reject any request
+    // that targets a different id (or arrives without the header, i.e. not via the gateway).
+    private void requireOwnership(String authCustomerId, String requestedCustomerId) {
+        requireAuthenticated(authCustomerId);
+        if (!authCustomerId.equals(requestedCustomerId)) {
+            throw new UnauthorizedWalletAccessException(
+                    "You may only access your own wallet(s)");
+        }
+    }
+
+    // Ensures the request carries an authenticated identity (i.e. it came through the gateway).
+    private void requireAuthenticated(String authCustomerId) {
+        if (authCustomerId == null || authCustomerId.isBlank()) {
+            throw new UnauthorizedWalletAccessException(
+                    "Missing authenticated customer identity; requests must go through the API gateway");
+        }
+    }
+
     @GetMapping
-    public ResponseEntity<ApiResponse<List<WalletDTO>>> getAllWallets() {
-        logger.info("GET /api/wallets - fetch all wallets");
-        List<WalletDTO> wallets = walletService.getAllWallets().stream()
+    public ResponseEntity<ApiResponse<List<WalletDTO>>> getAllWallets(
+            @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
+        logger.info("GET /api/wallets - fetch caller's wallets");
+        // Scoped to the caller: this returns only the authenticated customer's own wallets,
+        // never every wallet in the system.
+        requireAuthenticated(authCustomerId);
+        List<WalletDTO> wallets = walletService.getWalletsByCustomerId(authCustomerId).stream()
                 .map(this::toDto)
                 .toList();
         return ResponseEntity.ok(ApiResponse.success("Wallets fetched successfully", wallets));
     }
 
     @GetMapping("/{walletId}")
-    public ResponseEntity<ApiResponse<WalletDTO>> getWalletById(@PathVariable String walletId) {
+    public ResponseEntity<ApiResponse<WalletDTO>> getWalletById(@PathVariable String walletId,
+            @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
         logger.info("GET /api/wallets/{} - fetch wallet", walletId);
-        return ResponseEntity.ok(
-                ApiResponse.success("Wallet fetched successfully", toDto(walletService.getWalletById(walletId))));
+        Wallet wallet = walletService.getWalletById(walletId);
+        requireOwnership(authCustomerId, wallet.getCustomerId());
+        return ResponseEntity.ok(ApiResponse.success("Wallet fetched successfully", toDto(wallet)));
     }
 
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<ApiResponse<List<WalletDTO>>> getWalletsByCustomer(@PathVariable String customerId) {
+    public ResponseEntity<ApiResponse<List<WalletDTO>>> getWalletsByCustomer(@PathVariable String customerId,
+            @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
         logger.info("GET /api/wallets/customer/{} - fetch customer wallets", customerId);
+        requireOwnership(authCustomerId, customerId);
         List<WalletDTO> wallets = walletService.getWalletsByCustomerId(customerId).stream()
                 .map(this::toDto)
                 .toList();
@@ -75,24 +106,31 @@ public class WalletController {
 
     @PostMapping("/{walletId}/add-money")
     public ResponseEntity<ApiResponse<WalletDTO>> addMoney(@PathVariable String walletId,
-            @Valid @RequestBody AddMoneyRequest request) {
+            @Valid @RequestBody AddMoneyRequest request,
+            @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
         logger.info("POST /api/wallets/{}/add-money - amount {}", walletId, request.getAmount());
+        requireOwnership(authCustomerId, walletService.getWalletById(walletId).getCustomerId());
         return ResponseEntity.ok(ApiResponse.success("Money added successfully",
                 toDto(walletService.addMoney(walletId, request.getAmount()))));
     }
 
     @PostMapping("/{walletId}/pay-bill")
     public ResponseEntity<ApiResponse<WalletDTO>> payBill(@PathVariable String walletId,
-            @Valid @RequestBody PayBillRequest request) {
+            @Valid @RequestBody PayBillRequest request,
+            @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
         logger.info("POST /api/wallets/{}/pay-bill - amount {}", walletId, request.getAmount());
+        requireOwnership(authCustomerId, walletService.getWalletById(walletId).getCustomerId());
         return ResponseEntity.ok(ApiResponse.success("Bill paid successfully",
                 toDto(walletService.payBill(walletId, request.getAmount()))));
     }
 
     @PostMapping("/{walletId}/transfer")
     public ResponseEntity<ApiResponse<WalletDTO>> transfer(@PathVariable String walletId,
-            @Valid @RequestBody TransferRequest request) {
+            @Valid @RequestBody TransferRequest request,
+            @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authCustomerId) {
         logger.info("POST /api/wallets/{}/transfer - {} to {}", walletId, request.getAmount(), request.getTargetWalletId());
+        // Only the SOURCE wallet must be owned by the caller; the target may belong to anyone.
+        requireOwnership(authCustomerId, walletService.getWalletById(walletId).getCustomerId());
         Wallet source = walletService.transfer(walletId, request.getTargetWalletId(), request.getAmount());
         return ResponseEntity.ok(ApiResponse.success("Transfer completed successfully", toDto(source)));
     }

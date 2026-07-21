@@ -8,14 +8,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import com.tnf.common_dto.dto.common.ApiResponse;
+import com.tnf.common_dto.dto.customer.CustomerDto;
+import com.tnf.wallet_service.client.CustomerClient;
 import com.tnf.wallet_service.entity.Wallet;
 import com.tnf.wallet_service.entity.WalletType;
+import com.tnf.wallet_service.exception.CustomerNotFoundException;
+import com.tnf.wallet_service.exception.CustomerServiceUnavailableException;
 import com.tnf.wallet_service.exception.InsufficientBalanceException;
 import com.tnf.wallet_service.exception.InvalidAmountException;
 import com.tnf.wallet_service.exception.WalletLimitExceededException;
 import com.tnf.wallet_service.exception.WalletNotFoundException;
 import com.tnf.wallet_service.exception.WalletTransferException;
 import com.tnf.wallet_service.repositories.WalletRepo;
+
+import feign.FeignException;
 
 @Service
 public class WalletService {
@@ -27,13 +34,17 @@ public class WalletService {
     private static final BigDecimal DAILY_LIMIT = new BigDecimal("20000");
 
     private final WalletRepo walletRepo;
+    private final CustomerClient customerClient;
 
-    public WalletService(WalletRepo walletRepo) {
+    public WalletService(WalletRepo walletRepo, CustomerClient customerClient) {
         this.walletRepo = walletRepo;
+        this.customerClient = customerClient;
     }
 
     public Wallet createWallet(String customerId, WalletType walletType, BigDecimal openingBalance) {
         logger.info("Creating {} wallet for customer: {}", walletType, customerId);
+
+        validateCustomerExists(customerId);
 
         BigDecimal opening = openingBalance != null ? openingBalance : BigDecimal.ZERO;
         if (opening.signum() < 0 || opening.compareTo(MAX_BALANCE) > 0) {
@@ -51,6 +62,22 @@ public class WalletService {
         Wallet saved = walletRepo.save(wallet);
         logger.info("Wallet created with ID: {}", saved.getWalletId());
         return saved;
+    }
+
+    // Verifies the owning customer exists in customer-service before a wallet is created.
+    // Fails closed: a 404 -> CustomerNotFoundException; any other transport error -> unavailable.
+    private void validateCustomerExists(String customerId) {
+        try {
+            ApiResponse<CustomerDto> response = customerClient.getCustomer(customerId);
+            if (response == null || response.getData() == null || response.getData().getId() == null) {
+                throw new CustomerNotFoundException("Customer " + customerId + " does not exist");
+            }
+        } catch (FeignException.NotFound ex) {
+            throw new CustomerNotFoundException("Customer " + customerId + " does not exist");
+        } catch (FeignException ex) {
+            throw new CustomerServiceUnavailableException(
+                    "customer-service is unavailable; cannot verify customer " + customerId, ex);
+        }
     }
 
     public List<Wallet> getAllWallets() {

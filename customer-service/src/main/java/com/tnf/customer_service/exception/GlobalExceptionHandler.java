@@ -24,6 +24,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
+    // Caller tried to act on a customer profile that is not their own -> 403 Forbidden.
+    @ExceptionHandler(UnauthorizedCustomerAccessException.class)
+    public ResponseEntity<ErrorResponse> handleForbidden(UnauthorizedCustomerAccessException ex, HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
         String message = ex.getBindingResult().getFieldErrors().stream()
