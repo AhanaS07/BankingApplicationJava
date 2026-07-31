@@ -18,7 +18,7 @@ public class FeignClientConfig {
     private static final String CUSTOMER_ID_HEADER = "X-Auth-Customer-Id";
 
     @Bean
-    RequestInterceptor authHeaderPropagation() {
+    public RequestInterceptor authHeaderPropagation() {
         return template -> {
             if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attrs) {
                 String customerId = attrs.getRequest().getHeader(CUSTOMER_ID_HEADER);
