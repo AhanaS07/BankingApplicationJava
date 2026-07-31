@@ -58,6 +58,14 @@ class CustomerOwnershipTest {
     }
 
     @Test
+    void getCustomer_forbidsWhenIdentityHeaderIsBlank() {
+        // A blank header (e.g. "X-Auth-Customer-Id: ") must be rejected the same as a missing one.
+        CustomerService service = mock(CustomerService.class);
+        CustomerController controller = newController(service);
+        assertThrows(UnauthorizedCustomerAccessException.class, () -> controller.getCustomer("me", "  "));
+    }
+
+    @Test
     void updateCustomer_forbidsUpdatingAnotherProfile() {
         CustomerService service = mock(CustomerService.class);
         CustomerController controller = newController(service);
