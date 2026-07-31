@@ -83,6 +83,68 @@ account-service/
     └── exception/                        ← account-relevant exceptions
 ```
 
+## Unit tests & coverage (wallet-service)
+
+`wallet-service` has 98 unit tests with JaCoCo coverage and SonarQube analysis.
+Nothing needs to be running — no Mongo, no Eureka, no config-server.
+
+### Step 1 — run the tests
+
+```bash
+cd wallet-service
+./mvnw clean verify
+```
+
+Expected output near the end:
+
+```
+Tests run: 98, Failures: 0, Errors: 0, Skipped: 0
+All coverage checks have been met.
+BUILD SUCCESS
+```
+
+`verify` fails the build if line coverage falls below 90% or branch coverage below 85%.
+Use `./mvnw test` if you only want the tests without the coverage report.
+
+### Step 2 — check the coverage report
+
+```bash
+open target/site/jacoco/index.html
+```
+
+Currently 100% line and branch coverage. Click a class to see line-by-line
+green/red highlighting.
+
+### Step 3 — send it to SonarQube (optional)
+
+Needs a SonarQube server running. To start one with Docker:
+
+```bash
+docker run -d --name sonarqube -p 9000:9000 sonarqube:lts-community
+```
+
+Wait for it to boot, then open http://localhost:9000, log in with `admin` / `admin`,
+set a new password, and generate a token under **My Account → Security**. Then:
+
+```bash
+./mvnw clean verify sonar:sonar -Dsonar.token=<your-token>
+```
+
+Results appear at http://localhost:9000. The host URL, project key and JaCoCo report
+path are already configured in `wallet-service/pom.xml` — add `-Dsonar.host.url=...`
+only if your server is somewhere else.
+
+### What the tests cover
+
+| Test class | What it checks |
+|---|---|
+| `service/WalletServiceTest` | The money rules — max balance 50,000, daily spend limit 20,000, the daily counter resetting on a new day, and transfers rolling back the debit when the credit fails |
+| `controller/WalletControllerTest` | That every endpoint checks ownership, and that a wallet belonging to someone else returns 404 (not 403) so wallet IDs can't be guessed |
+| `exception/GlobalExceptionHandlerTest` | Each exception maps to the right HTTP status (404 / 403 / 422 / 503 / 409 / 500) |
+| `config/FeignClientConfigTest` | The caller's identity header is forwarded to customer-service, and never faked when it's missing |
+| `entity/WalletTest` | The `Wallet` constructor, `toString()`, and that `WalletType` still matches the values the API accepts |
+| `WalletServiceApplicationTests` | The Spring context starts and all beans wire up |
+
 ## Ports at a glance
 
 | Service            | Port |

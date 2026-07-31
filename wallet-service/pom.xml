@@ -29,6 +29,21 @@
 	<properties>
 		<java.version>21</java.version>
 		<spring-cloud.version>2025.0.3</spring-cloud.version>
+
+		<jacoco.version>0.8.13</jacoco.version>
+		<sonar-maven-plugin.version>5.1.0.4751</sonar-maven-plugin.version>
+
+		<!-- SonarQube: run with `mvn clean verify sonar:sonar -Dsonar.token=<token>` -->
+		<sonar.projectKey>tnf-banking_wallet-service</sonar.projectKey>
+		<sonar.projectName>wallet-service</sonar.projectName>
+		<sonar.host.url>http://localhost:9000</sonar.host.url>
+		<sonar.java.source>${java.version}</sonar.java.source>
+		<sonar.sources>src/main/java</sonar.sources>
+		<sonar.tests>src/test/java</sonar.tests>
+		<!-- Sonar reads coverage from the JaCoCo XML report produced by the `report` execution below -->
+		<sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+		<!-- Bootstrap class has no logic worth covering; DTO-free Feign interface has no body -->
+		<sonar.coverage.exclusions>**/WalletServiceApplication.java,**/client/CustomerClient.java</sonar.coverage.exclusions>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -112,6 +127,69 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+
+			<!-- Code coverage: agent during `test`, HTML/XML report + threshold gate during `verify` -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.version}</version>
+				<configuration>
+					<excludes>
+						<!-- Spring Boot bootstrap: a main() that only delegates to SpringApplication.run -->
+						<exclude>com/tnf/wallet_service/WalletServiceApplication.class</exclude>
+					</excludes>
+				</configuration>
+				<executions>
+					<execution>
+						<id>jacoco-prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>jacoco-report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+					<execution>
+						<!-- Runs after jacoco-report (same phase, declaration order) and fails the
+						     build if coverage regresses below the agreed floor. -->
+						<id>jacoco-check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.90</minimum>
+										</limit>
+										<limit>
+											<counter>BRANCH</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.85</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- SonarQube scanner; declared so the `sonar:sonar` prefix resolves to this version -->
+			<plugin>
+				<groupId>org.sonarsource.scanner.maven</groupId>
+				<artifactId>sonar-maven-plugin</artifactId>
+				<version>${sonar-maven-plugin.version}</version>
 			</plugin>
 		</plugins>
 	</build>

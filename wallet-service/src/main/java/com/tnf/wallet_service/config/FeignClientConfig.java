@@ -7,11 +7,12 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import feign.RequestInterceptor;
 
-/**
- * Propagates the gateway-injected identity header (X-Auth-Customer-Id) from the incoming request
- * onto outgoing Feign calls. This lets customer-service enforce ownership on service-to-service
- * lookups (which bypass the gateway) exactly as it does on end-user traffic.
+/*
+ Propagates the gateway-injected identity header (X-Auth-Customer-Id) from the incoming request
+ onto outgoing Feign calls. This lets customer-service enforce ownership on service-to-service
+ lookups (which bypass the gateway) exactly as it does on end-user traffic.
  */
+
 @Configuration
 public class FeignClientConfig {
 
