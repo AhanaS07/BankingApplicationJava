@@ -103,4 +103,11 @@ class RefreshTokenServiceImplTest {
         assertThat(stored.isRevoked()).isTrue();
         verify(repository).save(stored);
     }
+
+    @Test
+    void revokeAllForUserDeletesEveryToken() {
+        service.revokeAllForUser("user-1");
+
+        verify(repository).deleteByUserId("user-1");
+    }
 }

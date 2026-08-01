@@ -72,4 +72,20 @@ class JwtServiceImplTest {
 
         assertThat(jwtService.isTokenValid(foreign)).isFalse();
     }
+
+    @Test
+    @DisplayName("extractRoles yields empty set when the token carries no roles claim")
+    void extractRolesEmptyWhenClaimAbsent() {
+        // roles=null omits the claim entirely, so the roles value is not a Collection.
+        User noRoles = User.builder().id("u2").username("bob").password("hash").roles(null).build();
+        String token = jwtService.generateAccessToken(noRoles);
+
+        assertThat(jwtService.extractRoles(token)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("exposes the configured access-token expiration")
+    void reportsAccessTokenExpiration() {
+        assertThat(jwtService.getAccessTokenExpirationMs()).isEqualTo(900_000L);
+    }
 }

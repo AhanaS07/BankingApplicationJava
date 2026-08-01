@@ -29,6 +29,7 @@ import com.tnf.auth_service.entity.RefreshToken;
 import com.tnf.auth_service.entity.User;
 import com.tnf.auth_service.exception.CustomerProvisioningException;
 import com.tnf.auth_service.exception.InvalidCredentialsException;
+import com.tnf.auth_service.exception.UserNotFoundException;
 import com.tnf.auth_service.repository.UserRepository;
 import com.tnf.auth_service.security.CustomUserDetails;
 import com.tnf.auth_service.service.impl.AuthServiceImpl;
@@ -37,6 +38,7 @@ import com.tnf.common_dto.dto.auth.LoginRequest;
 import com.tnf.common_dto.dto.auth.RefreshTokenRequest;
 import com.tnf.common_dto.dto.auth.RefreshTokenResponse;
 import com.tnf.common_dto.dto.auth.RegisterRequest;
+import com.tnf.common_dto.dto.auth.UserResponse;
 import com.tnf.common_dto.dto.common.ApiResponse;
 import com.tnf.common_dto.dto.customer.CustomerDto;
 
@@ -154,9 +156,60 @@ class AuthServiceImplTest {
     }
 
     @Test
+    void refreshFailsWhenUserNoLongerExists() {
+        when(refreshTokenService.validate("old")).thenReturn(refreshToken("old"));
+        when(userRepository.findById("user-1")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.refresh(new RefreshTokenRequest("old")))
+                .isInstanceOf(UserNotFoundException.class);
+        verify(refreshTokenService, never()).create(anyString());
+    }
+
+    @Test
     void logoutRevokesToken() {
         authService.logout(new RefreshTokenRequest("some-token"));
 
         verify(refreshTokenService).revoke("some-token");
+    }
+
+    @Test
+    void registerFailsWhenCustomerServiceReturnsNoId() {
+        // customer-service responds OK but without a usable customer id.
+        when(customerClient.createCustomer(any(CustomerDto.class)))
+                .thenReturn(ApiResponse.success("created", new CustomerDto()));
+
+        assertThatThrownBy(() -> authService.register(registerRequest()))
+                .isInstanceOf(CustomerProvisioningException.class)
+                .hasMessageContaining("no customer id");
+
+        verify(userService, never()).register(any(RegisterRequest.class), anyString());
+    }
+
+    @Test
+    void registerFailsWhenCustomerResponseIsNull() {
+        when(customerClient.createCustomer(any(CustomerDto.class))).thenReturn(null);
+
+        assertThatThrownBy(() -> authService.register(registerRequest()))
+                .isInstanceOf(CustomerProvisioningException.class);
+        verify(userService, never()).register(any(RegisterRequest.class), anyString());
+    }
+
+    @Test
+    void registerFailsWhenCustomerResponseHasNoData() {
+        when(customerClient.createCustomer(any(CustomerDto.class)))
+                .thenReturn(ApiResponse.success("created", null));
+
+        assertThatThrownBy(() -> authService.register(registerRequest()))
+                .isInstanceOf(CustomerProvisioningException.class);
+        verify(userService, never()).register(any(RegisterRequest.class), anyString());
+    }
+
+    @Test
+    void getCurrentUserMapsResolvedUser() {
+        UserResponse mapped = UserResponse.builder().id("user-1").username("alice").build();
+        when(userService.getByUsername("alice")).thenReturn(user);
+        when(userService.toResponse(user)).thenReturn(mapped);
+
+        assertThat(authService.getCurrentUser("alice")).isSameAs(mapped);
     }
 }

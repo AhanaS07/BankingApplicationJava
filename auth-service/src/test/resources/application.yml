@@ -3,6 +3,10 @@ spring:
     name: auth-service
   profiles:
     active: test
+  # No centralised config server during tests; avoids the connection-refused retries to :8888.
+  cloud:
+    config:
+      enabled: false
   # No mongodb URI: the embedded MongoDB (flapdoodle) auto-configures host/port for tests.
   data:
     mongodb:
@@ -16,6 +20,10 @@ security:
     issuer: auth-service
     access-token-expiration-ms: 900000
     refresh-token-expiration-ms: 604800000
+  # Shared service-to-service key normally supplied by the config server; stubbed so the full
+  # application context (CustomerClientConfig's Feign interceptor) can load in @SpringBootTest.
+  internal:
+    api-key: test-internal-api-key
 
 # No service discovery / tracing infrastructure during tests.
 eureka:
